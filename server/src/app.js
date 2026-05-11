@@ -12,12 +12,17 @@ const app = express();
 
 // ==================== CORS 中间件 ====================
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
+  ? (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
   : '*';
+
+// 如果生产环境未配置允许域名，默认放行（开发阶段安全）
+if (Array.isArray(allowedOrigins) && allowedOrigins.length === 0) {
+  allowedOrigins.push('*');
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (allowedOrigins === '*' || !origin) return callback(null, true);
+    if (allowedOrigins.includes('*') || !origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('CORS 不允许的来源'));
   },
