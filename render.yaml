@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: bidding-system-api
+    runtime: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bidding-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+
+databases:
+  - name: bidding-db
+    databaseName: bidding
+    plan: starter
+    postgresMajorVersion: 16

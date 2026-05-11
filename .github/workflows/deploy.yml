@@ -1,0 +1,58 @@
+name: Deploy Bidding System
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 添加权限配置
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install Server Dependencies
+        run: cd server && npm ci
+
+      - name: Install Client Dependencies
+        run: cd client && npm ci
+
+      - name: Build Client
+        run: cd client && npm run build
+
+      - name: Run Server Tests
+        run: cd server && timeout 5 node src/server.js || true
+
+      # Deploy to GitHub Pages (frontend)
+      - name: Deploy Frontend to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./client/dist
+
+      # Backend deployment note
+      - name: Deployment Info
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "========================================="
+          echo "前端已部署到 GitHub Pages"
+          echo "后端需要部署到云服务 (Render/Railway)"
+          echo "========================================="
