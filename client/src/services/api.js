@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-// 根据环境判断使用哪个后端地址
-const isProduction = import.meta.env.PROD;
-const baseURL = isProduction 
-  ? 'https://bidding-system-api-m5nv.onrender.com/api'  // Render 后端地址
-  : '/api';  // 开发环境使用本地代理
+// 后端地址：开发环境也直接用 Render，省去本地 PostgreSQL
+const baseURL = 'https://bidding-system-api-m5nv.onrender.com/api';
 
 const api = axios.create({
   baseURL,

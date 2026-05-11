@@ -18,7 +18,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 24h
       - key: ALLOWED_ORIGINS
-        value: https://hymanluo1978.github.io,https://localhost:5173
+        value: https://hymanluo1978.github.io,http://localhost:5173,http://localhost:3000
 
 databases:
   - name: bidding-db

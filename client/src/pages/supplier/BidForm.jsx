@@ -58,7 +58,9 @@ const BidForm = () => {
       const res = await api.get(`/tenders/${tenderId}`);
       setTender(res.data?.data || res.data);
     } catch (err) {
-      message.error('获取招标详情失败');
+      const errMsg = err.response?.data?.message || err.message || '网络错误';
+      message.error(`获取招标详情失败: ${errMsg}`);
+      console.error('招标详情错误:', err.response?.data || err);
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,11 @@ const BidForm = () => {
         message.info('您已对该项目提交过投标');
       }
     } catch (err) {
-      // 404 表示未投标，忽略
+      if (err.response?.status === 404) {
+        // 404 表示未投标，忽略
+      } else {
+        console.error('检查投标状态失败:', err.response?.data || err);
+      }
     }
   };
 

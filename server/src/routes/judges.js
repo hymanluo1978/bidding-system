@@ -12,7 +12,7 @@ function normalizeFields(data, mapping) {
   if (!data || typeof data !== 'object') return data;
   const result = { ...data };
   Object.entries(mapping).forEach(([from, to]) => {
-    if (from in result) {
+    if (from !== to && from in result) {
       result[to] = result[from];
       delete result[from];
     }
