@@ -53,6 +53,7 @@ async function initDatabase() {
         description TEXT DEFAULT '',
         requirements TEXT DEFAULT '',
         qualification_requirements TEXT DEFAULT '',
+        attachments JSONB DEFAULT '[]',
         status VARCHAR(50) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'published', 'bidding', 'evaluation', 'completed', 'cancelled')),
         publish_date TIMESTAMP,
         bid_deadline TIMESTAMP,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Button, Card, Space, message, DatePicker } from 'antd';
+import { Form, Input, InputNumber, Select, Button, Card, Space, message, DatePicker, Upload, Divider, List, Popconfirm } from 'antd';
+import { UploadOutlined, DeleteOutlined, PaperClipOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import dayjs from 'dayjs';
@@ -11,6 +12,8 @@ const TenderForm = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -36,12 +39,63 @@ const TenderForm = () => {
         bidDeadline: (data.bid_deadline || data.bidDeadline) ? dayjs(data.bid_deadline || data.bidDeadline) : null,
         openTime: (data.open_bid_date || data.openTime) ? dayjs(data.open_bid_date || data.openTime) : null,
       });
+      setAttachments(data.attachments || []);
     } catch (error) {
       console.error('获取招标详情失败:', error);
       message.error('获取招标详情失败');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpload = async (file) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (!allowedExtensions.includes(ext)) {
+      message.error(`不支持的文件格式：.${ext}，仅支持 pdf/doc/docx/xls/xlsx`);
+      return false;
+    }
+
+    if (file.size / 1024 / 1024 > 20) {
+      message.error('文件大小不能超过 20MB');
+      return false;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('files', file);
+
+      const res = await api.post(`/tenders/${id}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const newFiles = res.data?.data || [];
+      if (newFiles.length > 0) {
+        setAttachments([...attachments, ...newFiles]);
+        message.success('文件上传成功');
+      }
+    } catch (error) {
+      console.error('上传失败:', error);
+      message.error('文件上传失败');
+    } finally {
+      setUploading(false);
+    }
+
+    return false;
+  };
+
+  const handleDeleteAttachment = (fileId) => {
+    setAttachments(attachments.filter(f => f.id !== fileId));
+    message.success('已移除附件');
   };
 
   const handleSubmit = async (values) => {
@@ -51,6 +105,7 @@ const TenderForm = () => {
         ...values,
         bidDeadline: values.bidDeadline ? values.bidDeadline.format('YYYY-MM-DD HH:mm:ss') : null,
         openTime: values.openTime ? values.openTime.format('YYYY-MM-DD HH:mm:ss') : null,
+        attachments: attachments,
       };
 
       if (isEdit) {
@@ -67,6 +122,12 @@ const TenderForm = () => {
     } finally {
       setSubmitLoading(false);
     }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   return (
@@ -163,6 +224,64 @@ const TenderForm = () => {
               placeholder="请选择开标时间"
               style={{ width: '100%' }}
             />
+          </Form.Item>
+
+          <Divider />
+
+          <Form.Item
+            label="招标文件附件"
+            extra="上传招标报价书等标准文件，供应商可下载查看。支持 pdf/doc/docx/xls/xlsx 格式，单个文件不超过20MB"
+          >
+            {isEdit ? (
+              <>
+                <Upload
+                  beforeUpload={handleUpload}
+                  showUploadList={false}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                >
+                  <Button icon={<UploadOutlined />} loading={uploading}>
+                    上传附件
+                  </Button>
+                </Upload>
+
+                {attachments.length > 0 && (
+                  <List
+                    size="small"
+                    style={{ marginTop: 16 }}
+                    dataSource={attachments}
+                    renderItem={(file) => (
+                      <List.Item
+                        actions={[
+                          <Popconfirm
+                            key="delete"
+                            title="确定要删除此附件吗？"
+                            onConfirm={() => handleDeleteAttachment(file.id)}
+                            okText="确定"
+                            cancelText="取消"
+                          >
+                            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                              删除
+                            </Button>
+                          </Popconfirm>
+                        ]}
+                      >
+                        <Space>
+                          <PaperClipOutlined />
+                          <span>{file.name}</span>
+                          <span style={{ color: '#999', fontSize: 12 }}>
+                            ({formatFileSize(file.size)})
+                          </span>
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </>
+            ) : (
+              <div style={{ color: '#999' }}>
+                请先创建招标项目后再上传附件
+              </div>
+            )}
           </Form.Item>
 
           <Form.Item>

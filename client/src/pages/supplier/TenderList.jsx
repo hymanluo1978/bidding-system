@@ -11,8 +11,10 @@ import {
   Typography,
   message,
   Spin,
+  List,
+  Divider,
 } from 'antd';
-import { SearchOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, EditOutlined, PaperClipOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -216,48 +218,78 @@ const TenderList = () => {
       >
         <Spin spinning={detailLoading}>
           {currentTender && (
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="项目编号" span={2}>
-                {currentTender.project_number || currentTender.tenderNo || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="项目名称" span={2}>
-                {currentTender.title || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="限价金额">
-                {currentTender.budget != null && Number(currentTender.budget) > 0
-                  ? `¥ ${Number(currentTender.budget).toLocaleString()}`
-                  : '不限价'}
-              </Descriptions.Item>
-              <Descriptions.Item label="状态">
-                {(() => {
-                  const item =
-                    statusMap[currentTender.status] || {
-                      label: currentTender.status || '未知',
-                      color: 'default',
-                    };
-                  return <Tag color={item.color}>{item.label}</Tag>;
-                })()}
-              </Descriptions.Item>
-              <Descriptions.Item label="投标截止时间">
-                {currentTender.bid_deadline
-                  ? new Date(currentTender.bid_deadline).toLocaleString('zh-CN')
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="开标时间">
-                {currentTender.open_bid_date
-                  ? new Date(currentTender.open_bid_date).toLocaleString('zh-CN')
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="项目描述" span={2}>
-                {currentTender.description || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="技术要求" span={2}>
-                {currentTender.requirements || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="资质要求" span={2}>
-                {currentTender.qualification_requirements || currentTender.qualificationRequirements || '-'}
-              </Descriptions.Item>
-            </Descriptions>
+            <div>
+              <Descriptions bordered column={2} size="small">
+                <Descriptions.Item label="项目编号" span={2}>
+                  {currentTender.project_number || currentTender.tenderNo || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="项目名称" span={2}>
+                  {currentTender.title || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="限价金额">
+                  {currentTender.budget != null && Number(currentTender.budget) > 0
+                    ? `¥ ${Number(currentTender.budget).toLocaleString()}`
+                    : '不限价'}
+                </Descriptions.Item>
+                <Descriptions.Item label="状态">
+                  {(() => {
+                    const item =
+                      statusMap[currentTender.status] || {
+                        label: currentTender.status || '未知',
+                        color: 'default',
+                      };
+                    return <Tag color={item.color}>{item.label}</Tag>;
+                  })()}
+                </Descriptions.Item>
+                <Descriptions.Item label="投标截止时间">
+                  {currentTender.bid_deadline
+                    ? new Date(currentTender.bid_deadline).toLocaleString('zh-CN')
+                    : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="开标时间">
+                  {currentTender.open_bid_date
+                    ? new Date(currentTender.open_bid_date).toLocaleString('zh-CN')
+                    : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="项目描述" span={2}>
+                  {currentTender.description || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="技术要求" span={2}>
+                  {currentTender.requirements || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="资质要求" span={2}>
+                  {currentTender.qualification_requirements || currentTender.qualificationRequirements || '-'}
+                </Descriptions.Item>
+              </Descriptions>
+
+              {currentTender.attachments && currentTender.attachments.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <Divider />
+                  <Title level={5}>招标文件附件</Title>
+                  <List
+                    size="small"
+                    dataSource={currentTender.attachments}
+                    renderItem={(file) => (
+                      <List.Item>
+                        <Space>
+                          <PaperClipOutlined />
+                          <span>{file.name}</span>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            href={file.path}
+                            target="_blank"
+                          >
+                            下载
+                          </Button>
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </Spin>
       </Modal>

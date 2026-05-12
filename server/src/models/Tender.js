@@ -28,12 +28,16 @@ class Tender {
     const fields = [];
     const values = [];
     let paramIndex = 1;
-    const allowedFields = ['title', 'category', 'budget', 'description', 'requirements', 'qualification_requirements', 'bid_deadline', 'open_bid_date', 'status', 'publish_date'];
+    const allowedFields = ['title', 'category', 'budget', 'description', 'requirements', 'qualification_requirements', 'bid_deadline', 'open_bid_date', 'status', 'publish_date', 'attachments'];
     
     allowedFields.forEach(field => {
       if (data[field] !== undefined) {
         fields.push(`${field} = $${paramIndex}`);
-        values.push(data[field]);
+        if (field === 'attachments' && Array.isArray(data[field])) {
+          values.push(JSON.stringify(data[field]));
+        } else {
+          values.push(data[field]);
+        }
         paramIndex++;
       }
     });
