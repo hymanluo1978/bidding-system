@@ -12,11 +12,16 @@ import {
   Divider,
   Tag,
   Empty,
+  Modal,
+  List,
 } from 'antd';
 import {
   SaveOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
+  PaperClipOutlined,
+  DownloadOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
@@ -34,26 +39,24 @@ const ScoreForm = () => {
   const [tenderInfo, setTenderInfo] = useState(null);
   const [bids, setBids] = useState([]);
   const [scores, setScores] = useState({});
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [bidDetailVisible, setBidDetailVisible] = useState(false);
 
   const fetchTaskData = useCallback(async () => {
     setLoading(true);
     try {
-      // 并行获取招标详情和评标任务数据
       const [tenderRes, tasksRes] = await Promise.all([
         api.get(`/tenders/${tenderId}`).catch(() => ({ data: { data: null } })),
         api.get(`/evaluation/my-tasks/${tenderId}`),
       ]);
 
-      // 招标详情
       const tenderData = tenderRes.data?.data || tenderRes.data || null;
       setTenderInfo(tenderData);
 
-      // 评标任务数据：后端返回 [{ ...bid, has_scored, my_score }]
       const tasksData = tasksRes.data?.data || tasksRes.data || [];
       const bidsList = Array.isArray(tasksData) ? tasksData : [];
       setBids(bidsList);
 
-      // 初始化已有评分
       const initScores = {};
       bidsList.forEach((bid) => {
         if (bid.my_score) {
@@ -124,7 +127,6 @@ const ScoreForm = () => {
       });
 
       message.success('评分保存成功');
-      // 刷新数据以获取最新评分
       fetchTaskData();
     } catch (err) {
       message.error(err.response?.data?.message || '评分保存失败，请稍后重试');
@@ -133,12 +135,23 @@ const ScoreForm = () => {
     }
   };
 
+  const handleViewBidDetail = (bid) => {
+    setSelectedBid(bid);
+    setBidDetailVisible(true);
+  };
+
   const getTotalScore = (bidId) => {
     const s = scores[bidId] || {};
     const tech = s.technical_score || 0;
     const comm = s.business_score || 0;
     const price = s.price_score || 0;
     return tech + comm + price;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (loading) {
@@ -163,7 +176,6 @@ const ScoreForm = () => {
 
         <Title level={4}>评标打分</Title>
 
-        {/* 招标项目信息 */}
         {tenderInfo && (
           <Card
             type="inner"
@@ -178,16 +190,15 @@ const ScoreForm = () => {
               <Descriptions.Item label="项目名称">
                 {tenderInfo.title || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="预算金额">
-                {tenderInfo.budget != null
+              <Descriptions.Item label="限价金额">
+                {tenderInfo.budget != null && Number(tenderInfo.budget) > 0
                   ? `¥ ${Number(tenderInfo.budget).toLocaleString()}`
-                  : '-'}
+                  : '不限价'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
-        {/* 投标评分列表 */}
         <Card type="inner" title="投标评分">
           {bids.length === 0 ? (
             <Empty description="暂无投标记录" style={{ padding: 40 }} />
@@ -199,6 +210,8 @@ const ScoreForm = () => {
               const hasScore = bidScores.technical_score != null ||
                 bidScores.business_score != null ||
                 bidScores.price_score != null;
+              const attachments = bid.attachments || [];
+              const hasAttachments = attachments.length > 0;
 
               return (
                 <div key={bidId || index}>
@@ -222,6 +235,11 @@ const ScoreForm = () => {
                           ? `¥ ${Number(bid.bid_price).toLocaleString()}`
                           : '-'}
                       </Text>
+                      {hasAttachments && (
+                        <Tag icon={<PaperClipOutlined />} color="blue">
+                          {attachments.length} 个附件
+                        </Tag>
+                      )}
                       {bid.has_scored && (
                         <Tag color="green">
                           <CheckCircleOutlined /> 已评分
@@ -232,6 +250,18 @@ const ScoreForm = () => {
                           当前总分：{total}
                         </Tag>
                       )}
+                    </Space>
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <Space>
+                      <Button
+                        type="default"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewBidDetail(bid)}
+                      >
+                        查看详情及附件
+                      </Button>
                     </Space>
                   </div>
 
@@ -312,6 +342,83 @@ const ScoreForm = () => {
           )}
         </Card>
       </Card>
+
+      <Modal
+        title="投标详情"
+        open={bidDetailVisible}
+        onCancel={() => {
+          setBidDetailVisible(false);
+          setSelectedBid(null);
+        }}
+        footer={null}
+        width={700}
+      >
+        {selectedBid && (
+          <div>
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="供应商">{selectedBid.real_name || selectedBid.company_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="报价">¥{Number(selectedBid.bid_price || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="提交时间">
+                {selectedBid.submit_time ? dayjs(selectedBid.submit_time).format('YYYY-MM-DD HH:mm') : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Tag>{selectedBid.status === 'submitted' ? '已提交' : selectedBid.status}</Tag>
+              </Descriptions.Item>
+            </Descriptions>
+
+            {selectedBid.technical_proposal && (
+              <>
+                <Divider orientation="left">技术方案</Divider>
+                <div style={{ whiteSpace: 'pre-wrap' }}>{selectedBid.technical_proposal}</div>
+              </>
+            )}
+
+            {selectedBid.business_proposal && (
+              <>
+                <Divider orientation="left">商务方案</Divider>
+                <div style={{ whiteSpace: 'pre-wrap' }}>{selectedBid.business_proposal}</div>
+              </>
+            )}
+
+            {selectedBid.attachments && selectedBid.attachments.length > 0 ? (
+              <>
+                <Divider orientation="left">投标附件（共 {selectedBid.attachments.length} 个）</Divider>
+                <List
+                  size="small"
+                  bordered
+                  dataSource={selectedBid.attachments}
+                  renderItem={(file) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          href={file.path}
+                          target="_blank"
+                        >
+                          下载
+                        </Button>
+                      ]}
+                    >
+                      <List.Item.Meta
+                        avatar={<PaperClipOutlined style={{ fontSize: 20, color: '#1890ff' }} />}
+                        title={file.name}
+                        description={`大小: ${formatFileSize(file.size)} | 类型: ${file.mimetype || '未知'}`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              </>
+            ) : (
+              <>
+                <Divider orientation="left">投标附件</Divider>
+                <Text type="secondary">暂无附件</Text>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
