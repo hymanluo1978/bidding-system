@@ -40,7 +40,7 @@ const EvaluationDetail = () => {
   const [weights, setWeights] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { tenderId: id } = useParams();
 
   useEffect(() => {
     if (id) {
