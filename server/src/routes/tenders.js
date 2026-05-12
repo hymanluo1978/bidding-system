@@ -163,26 +163,49 @@ router.put('/:id/publish', requireRole('admin', 'manager'), async (req, res, nex
 });
 
 // 上传招标书文件
-router.post('/:id/upload', requireRole('admin', 'manager'), upload.array('files', 10), async (req, res, next) => {
-  try {
-    const tender = await Tender.findById(req.params.id);
-    if (!tender) {
-      return res.status(404).json({ code: 404, message: '招标项目不存在' });
+router.post('/:id/upload', requireRole('admin', 'manager'), (req, res, next) => {
+  upload.array('files', 10)(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ code: 400, message: '文件大小超过限制（最大50MB）' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ code: 400, message: '文件数量超过限制（最多10个）' });
+      }
+      return res.status(400).json({ code: 400, message: err.message || '文件上传失败' });
     }
+    
+    (async () => {
+      try {
+        const tender = await Tender.findById(req.params.id);
+        if (!tender) {
+          return res.status(404).json({ code: 404, message: '招标项目不存在' });
+        }
 
-    const files = (req.files || []).map(file => ({
-      id: uuidv4(),
-      name: file.originalname,
-      path: `/uploads/tenders/${file.filename}`,
-      size: file.size,
-      mimetype: file.mimetype,
-      uploaded_at: dayjs().format('YYYY-MM-DD HH:mm:ss')
-    }));
+        const files = (req.files || []).map(file => ({
+          id: uuidv4(),
+          name: file.originalname,
+          path: `/uploads/tenders/${file.filename}`,
+          size: file.size,
+          mimetype: file.mimetype,
+          uploaded_at: dayjs().format('YYYY-MM-DD HH:mm:ss')
+        }));
 
-    res.json({ code: 200, message: '文件上传成功', data: files });
-  } catch (err) {
-    next(err);
-  }
+        // 将新附件合并到现有附件中
+        const existingAttachments = tender.attachments || [];
+        const newAttachments = [...existingAttachments, ...files];
+        
+        // 更新数据库
+        await Tender.update(req.params.id, { attachments: newAttachments });
+
+        res.json({ code: 200, message: '文件上传成功', data: files });
+      } catch (err) {
+        console.error('Upload error:', err);
+        next(err);
+      }
+    })();
+  });
 });
 
 // 删除招标项目
