@@ -43,6 +43,16 @@ if (typeof UPLOAD_DIR === 'string') {
 }
 console.log(`[Static] Upload directory: ${UPLOAD_DIR}`);
 
+// 诊断端点
+app.get('/api/debug/paths', (req, res) => {
+  res.json({
+    uploadDir: UPLOAD_DIR,
+    __dirname: __dirname,
+    resolvedPath: path.resolve(__dirname, '..', 'uploads'),
+    envUploadDir: process.env.UPLOAD_DIR || 'not set'
+  });
+});
+
 // 直接用 express.static，不加前缀
 app.use('/uploads', express.static(UPLOAD_DIR, {
   fallthrough: true,
