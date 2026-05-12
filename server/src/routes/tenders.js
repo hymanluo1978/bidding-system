@@ -152,12 +152,19 @@ router.put('/:id/publish', requireRole('admin', 'manager'), async (req, res, nex
     if (!tender) return res.status(404).json({ code: 404, message: '招标项目不存在' });
     if (tender.status !== 'draft') return res.status(400).json({ code: 400, message: '只有草稿状态的招标才能发布' });
 
+    console.log(`[Publish] Publishing tender ${req.params.id}, current status: ${tender.status}`);
+
     await Tender.update(req.params.id, {
       status: 'published',
       publish_date: dayjs().format('YYYY-MM-DD HH:mm:ss')
     });
-    res.json({ code: 200, message: '招标已发布' });
+
+    const updatedTender = await Tender.findById(req.params.id);
+    console.log(`[Publish] Tender ${req.params.id} updated, new status: ${updatedTender?.status}`);
+
+    res.json({ code: 200, message: '招标已发布', data: updatedTender });
   } catch (err) {
+    console.error(`[Publish] Error publishing tender ${req.params.id}:`, err);
     next(err);
   }
 });

@@ -30,6 +30,8 @@ class Tender {
     let paramIndex = 1;
     const allowedFields = ['title', 'category', 'budget', 'description', 'requirements', 'qualification_requirements', 'bid_deadline', 'open_bid_date', 'status', 'publish_date', 'attachments'];
     
+    console.log(`[Tender.update] Updating tender ${id} with data:`, JSON.stringify(data));
+    
     allowedFields.forEach(field => {
       if (data[field] !== undefined) {
         fields.push(`${field} = $${paramIndex}`);
@@ -42,12 +44,19 @@ class Tender {
       }
     });
     
-    if (fields.length === 0) return false;
+    if (fields.length === 0) {
+      console.log(`[Tender.update] No fields to update for tender ${id}`);
+      return false;
+    }
     
     fields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(id);
     
-    await query(`UPDATE tenders SET ${fields.join(', ')} WHERE id = $${paramIndex}`, values);
+    const sql = `UPDATE tenders SET ${fields.join(', ')} WHERE id = $${paramIndex}`;
+    console.log(`[Tender.update] Executing SQL: ${sql} with params:`, values);
+    
+    await query(sql, values);
+    console.log(`[Tender.update] Tender ${id} updated successfully`);
     return true;
   }
   
