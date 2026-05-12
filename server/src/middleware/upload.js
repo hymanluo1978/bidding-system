@@ -56,12 +56,17 @@ const fileFilter = (req, file, cb) => {
     'image/webp',
     'text/plain',
     'application/zip',
-    'application/x-zip-compressed'
+    'application/x-zip-compressed',
+    'application/octet-stream'
   ];
-  if (allowedTypes.includes(file.mimetype)) {
+  
+  const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'zip'];
+  const ext = path.extname(file.originalname).toLowerCase().slice(1);
+  
+  if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error(`不支持的文件类型: ${file.mimetype}`), false);
+    cb(new Error(`不支持的文件类型: ${file.mimetype}，扩展名: ${ext}`), false);
   }
 };
 
