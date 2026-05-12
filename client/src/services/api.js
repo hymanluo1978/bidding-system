@@ -10,6 +10,9 @@ export const getFileUrl = (path) => {
   if (path.startsWith('/uploads/')) {
     return `${baseURL}${path}`;
   }
+  if (path.startsWith('uploads/')) {
+    return `${baseURL}/${path}`;
+  }
   return `${baseURL}/${path}`;
 };
 

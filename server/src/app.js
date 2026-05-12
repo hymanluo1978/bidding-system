@@ -41,7 +41,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.resolve(__dirname, '..', 'uplo
 if (typeof UPLOAD_DIR === 'string') {
   try { require('fs').mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 }
-app.use('/uploads', express.static(UPLOAD_DIR));
+app.use('/api/uploads', express.static(UPLOAD_DIR));
 
 // 请求日志中间件（简易版）
 app.use((req, res, next) => {
