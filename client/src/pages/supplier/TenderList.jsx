@@ -113,12 +113,12 @@ const TenderList = () => {
       ellipsis: true,
     },
     {
-      title: '预算金额（元）',
+      title: '限价金额',
       dataIndex: 'budget',
       key: 'budget',
       width: 150,
       align: 'right',
-      render: (val) => (val != null ? `¥ ${Number(val).toLocaleString()}` : '-'),
+      render: (val) => (val != null && Number(val) > 0 ? `¥ ${Number(val).toLocaleString()}` : '不限价'),
     },
     {
       title: '截止时间',

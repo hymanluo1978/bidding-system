@@ -46,7 +46,7 @@ const MyBids = () => {
 
   const handleWithdraw = async (record) => {
     try {
-      await api.put(`/bids/${record.id}/withdraw`);
+      await api.put(`/bids/${record.id}/withdraw`, { tender_id: record.tender_id });
       message.success('投标已撤回');
       fetchMyBids();
     } catch (err) {

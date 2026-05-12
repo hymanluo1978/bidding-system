@@ -123,10 +123,11 @@ router.get('/tender/:tenderId/summary', requireRole('admin', 'manager'), async (
 // 供应商撤回投标
 router.put('/:id/withdraw', requireRole('supplier'), async (req, res, next) => {
   try {
-    if (!req.body.tender_id) {
+    const tender_id = req.body.tender_id || req.query.tender_id;
+    if (!tender_id) {
       return res.status(400).json({ code: 400, message: '招标项目ID不能为空' });
     }
-    const bid = await Bid.findByTenderAndSupplier(req.body.tender_id, req.user.id);
+    const bid = await Bid.findByTenderAndSupplier(tender_id, req.user.id);
     if (!bid || bid.id !== req.params.id) {
       return res.status(404).json({ code: 404, message: '投标记录不存在' });
     }
