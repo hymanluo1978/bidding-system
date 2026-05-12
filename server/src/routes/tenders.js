@@ -215,8 +215,8 @@ router.post('/:id/upload', requireRole('admin', 'manager'), (req, res, next) => 
   });
 });
 
-// 删除招标项目
-router.delete('/:id', requireRole('admin', 'manager'), async (req, res, next) => {
+// 删除招标项目（仅系统管理员）
+router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
     const tender = await Tender.findById(req.params.id);
     if (!tender) {

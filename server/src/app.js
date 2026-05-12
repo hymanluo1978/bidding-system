@@ -185,6 +185,9 @@ app.use('/api/weights', require('./routes/weights'));
 // 询标澄清路由
 app.use('/api/clarifications', require('./routes/clarifications'));
 
+// 用户管理路由
+app.use('/api/users', require('./routes/users'));
+
 // ==================== 404 处理 ====================
 app.use(notFoundHandler);
 

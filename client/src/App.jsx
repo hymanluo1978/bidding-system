@@ -17,6 +17,7 @@ import JudgeList from './pages/admin/JudgeList';
 import JudgeForm from './pages/admin/JudgeForm';
 import EvaluationList from './pages/admin/EvaluationList';
 import EvaluationDetail from './pages/admin/EvaluationDetail';
+import UserManagement from './pages/admin/UserManagement';
 
 // 供应商页面
 import SupplierTenders from './pages/supplier/TenderList';
@@ -73,6 +74,7 @@ function App() {
           <Route path="judges/:id/edit" element={<JudgeForm />} />
           <Route path="evaluation" element={<EvaluationList />} />
           <Route path="evaluation/:tenderId" element={<EvaluationDetail />} />
+          <Route path="users" element={<UserManagement />} />
         </Route>
 
         {/* 供应商路由 */}

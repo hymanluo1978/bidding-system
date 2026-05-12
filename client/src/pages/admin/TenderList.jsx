@@ -25,6 +25,9 @@ const TenderList = () => {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
+  
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.role === 'admin';
 
   useEffect(() => {
     fetchData();
@@ -166,7 +169,7 @@ const TenderList = () => {
                 发布
               </Button>
             )}
-            {record.status === 'draft' && (
+            {record.status === 'draft' && isAdmin && (
               <Popconfirm
                 title="确定要删除该招标项目吗？"
                 onConfirm={() => handleDelete(id)}
