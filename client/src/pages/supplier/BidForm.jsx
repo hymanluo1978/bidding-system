@@ -37,7 +37,7 @@ const statusMap = {
 
 const BidForm = () => {
   const navigate = useNavigate();
-  const { tenderId } = useParams();
+  const { id: tenderId } = useParams();
   const [form] = Form.useForm();
 
   const [loading, setLoading] = useState(false);
