@@ -149,6 +149,16 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_logs_created ON operation_logs(created_at);
     `);
 
+    // 添加缺失的列（迁移）
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tenders' AND column_name = 'attachments') THEN
+          ALTER TABLE tenders ADD COLUMN attachments JSONB DEFAULT '[]';
+        END IF;
+      END $$;
+    `);
+
     console.log('PostgreSQL 数据库初始化完成');
   } finally {
     client.release();
