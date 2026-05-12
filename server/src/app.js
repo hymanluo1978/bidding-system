@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
 // 加载环境变量
@@ -50,6 +51,82 @@ app.get('/api/debug/paths', (req, res) => {
     __dirname: __dirname,
     resolvedPath: path.resolve(__dirname, '..', 'uploads'),
     envUploadDir: process.env.UPLOAD_DIR || 'not set'
+  });
+});
+
+// 文件下载路由 - 正确处理二进制文件
+app.get('/uploads/*', (req, res, next) => {
+  const filePath = req.params[0];
+  const fullPath = path.join(UPLOAD_DIR, filePath);
+  
+  fs.readFile(fullPath, (err, data) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).json({ code: 404, message: '请求的资源不存在', errorCode: 'NOT_FOUND' });
+      }
+      return res.status(500).json({ code: 500, message: '服务器内部错误' });
+    }
+    
+    const ext = path.extname(fullPath).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.txt': 'text/plain; charset=utf-8',
+      '.zip': 'application/zip'
+    };
+    
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    const fileName = encodeURIComponent(path.basename(fullPath));
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', data.length);
+    res.send(data);
+  });
+});
+
+// 备用下载路由
+app.get('/api/uploads/*', (req, res, next) => {
+  const filePath = req.params[0];
+  const fullPath = path.join(UPLOAD_DIR, filePath);
+  
+  fs.readFile(fullPath, (err, data) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).json({ code: 404, message: '请求的资源不存在', errorCode: 'NOT_FOUND' });
+      }
+      return res.status(500).json({ code: 500, message: '服务器内部错误' });
+    }
+    
+    const ext = path.extname(fullPath).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.txt': 'text/plain; charset=utf-8',
+      '.zip': 'application/zip'
+    };
+    
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    const fileName = encodeURIComponent(path.basename(fullPath));
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', data.length);
+    res.send(data);
   });
 });
 
