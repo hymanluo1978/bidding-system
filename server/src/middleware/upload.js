@@ -4,9 +4,11 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // 使用绝对路径，与 app.js 保持一致
+// __dirname = server/src/middleware，所以 '..', 'uploads' = server/src/uploads（错误）
+// 应该用 '..', '..', 'uploads' = server/uploads（正确）
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
-  : path.resolve(__dirname, '..', 'uploads');
+  : path.resolve(__dirname, '..', '..', 'uploads');
 
 // 确保上传目录存在
 const uploadDirs = {
