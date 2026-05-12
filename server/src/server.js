@@ -16,10 +16,11 @@ async function startServer() {
     await initSeedData();
     
     app.listen(PORT, () => {
+      const deployUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
       console.log('=================================');
-      console.log(`  招投标系统后端服务已启动`);
-      console.log(`  地址: http://localhost:${PORT}`);
-      console.log(`  环境: ${process.env.NODE_ENV || 'development'}`);
+      console.log('  招投标系统后端服务已启动');
+      console.log(`  地址: ${deployUrl}`);
+      console.log(`  环境: ${process.env.NODE_ENV || 'production'}`);
       console.log('=================================');
     });
   } catch (err) {
