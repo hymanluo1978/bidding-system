@@ -21,7 +21,13 @@
 - 预算金额改为限价金额（支持不限价模式）
 
 ## 访问地址
-- 前端：https://hymanluo1978.github.io/bidding-system/login
+
+### 国内访问（推荐）
+- 前端（Gitee）：https://hymanluo1978.gitee.io/bidding-system/login
+- 仓库：https://gitee.com/hymanluo1978/bidding-system
+
+### 国际访问
+- 前端（GitHub）：https://hymanluo1978.github.io/bidding-system/login
 - 后端 API：https://bidding-system-api-m5nv.onrender.com/api
 
 ## 测试账号
