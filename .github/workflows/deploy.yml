@@ -36,6 +36,8 @@ jobs:
 
       - name: Build Client
         run: cd client && npm run build
+        env:
+          VITE_API_BASE_URL: https://bidding-system-api-m5nv.onrender.com/api
 
       - name: Run Server Tests
         run: cd server && timeout 5 node src/server.js || true
