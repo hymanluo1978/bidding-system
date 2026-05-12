@@ -124,6 +124,39 @@ async function initDatabase() {
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- ==================== 评标权重配置表 ====================
+      CREATE TABLE IF NOT EXISTS evaluation_weights (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tender_id UUID NOT NULL UNIQUE REFERENCES tenders(id),
+        technical_weight NUMERIC NOT NULL DEFAULT 40,
+        business_weight NUMERIC NOT NULL DEFAULT 30,
+        price_weight NUMERIC NOT NULL DEFAULT 30,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- ==================== 询标澄清表 ====================
+      CREATE TABLE IF NOT EXISTS clarification_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tender_id UUID NOT NULL REFERENCES tenders(id),
+        bid_id UUID NOT NULL REFERENCES bids(id),
+        request_content TEXT NOT NULL,
+        request_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'responded', 'closed')),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- ==================== 澄清回复表 ====================
+      CREATE TABLE IF NOT EXISTS clarification_responses (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_id UUID NOT NULL REFERENCES clarification_requests(id),
+        response_content TEXT NOT NULL,
+        attachments JSONB DEFAULT '[]',
+        response_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
       -- ==================== 操作日志表 ====================
       CREATE TABLE IF NOT EXISTS operation_logs (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -157,6 +190,43 @@ async function initDatabase() {
           ALTER TABLE tenders ADD COLUMN attachments JSONB DEFAULT '[]';
         END IF;
       END $$;
+    `);
+
+    // 创建新的表（如果不存在）
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS evaluation_weights (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tender_id UUID NOT NULL UNIQUE REFERENCES tenders(id),
+        technical_weight NUMERIC NOT NULL DEFAULT 40,
+        business_weight NUMERIC NOT NULL DEFAULT 30,
+        price_weight NUMERIC NOT NULL DEFAULT 30,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS clarification_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tender_id UUID NOT NULL REFERENCES tenders(id),
+        bid_id UUID NOT NULL REFERENCES bids(id),
+        request_content TEXT NOT NULL,
+        request_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'responded', 'closed')),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS clarification_responses (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_id UUID NOT NULL REFERENCES clarification_requests(id),
+        response_content TEXT NOT NULL,
+        attachments JSONB DEFAULT '[]',
+        response_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     console.log('PostgreSQL 数据库初始化完成');

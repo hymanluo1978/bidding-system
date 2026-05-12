@@ -211,12 +211,23 @@ router.get('/my-tasks/:tenderId', requireRole('judge'), async (req, res, next) =
 // 管理员：获取评标结果
 router.get('/result/:tenderId', requireRole('admin', 'manager'), async (req, res, next) => {
   try {
-    const { technical = 40, business = 30, price = 30 } = req.query;
-    const weights = {
-      technical: Math.max(0, Math.min(100, parseFloat(technical) || 0)),
-      business: Math.max(0, Math.min(100, parseFloat(business) || 0)),
-      price: Math.max(0, Math.min(100, parseFloat(price) || 0))
-    };
+    let weights = { technical: 40, business: 30, price: 30 };
+
+    const weightResult = await query('SELECT * FROM evaluation_weights WHERE tender_id = $1', [req.params.tenderId]);
+    const savedWeight = weightResult.rows[0];
+    if (savedWeight) {
+      weights = {
+        technical: parseFloat(savedWeight.technical_weight) || 40,
+        business: parseFloat(savedWeight.business_weight) || 30,
+        price: parseFloat(savedWeight.price_weight) || 30
+      };
+    } else if (req.query.technical || req.query.business || req.query.price) {
+      weights = {
+        technical: Math.max(0, Math.min(100, parseFloat(req.query.technical) || 0)),
+        business: Math.max(0, Math.min(100, parseFloat(req.query.business) || 0)),
+        price: Math.max(0, Math.min(100, parseFloat(req.query.price) || 0))
+      };
+    }
 
     const result = await Evaluation.calculateResult(req.params.tenderId, weights);
     res.json({ code: 200, data: result });

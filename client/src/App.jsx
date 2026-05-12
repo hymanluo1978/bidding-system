@@ -22,6 +22,7 @@ import EvaluationDetail from './pages/admin/EvaluationDetail';
 import SupplierTenders from './pages/supplier/TenderList';
 import SupplierBidForm from './pages/supplier/BidForm';
 import SupplierMyBids from './pages/supplier/MyBids';
+import SupplierClarifications from './pages/supplier/Clarifications';
 
 // 评委页面
 import JudgeTasks from './pages/judge/Tasks';
@@ -80,6 +81,7 @@ function App() {
           <Route path="tenders" element={<SupplierTenders />} />
           <Route path="tenders/:id/bid" element={<SupplierBidForm />} />
           <Route path="my-bids" element={<SupplierMyBids />} />
+          <Route path="clarifications" element={<SupplierClarifications />} />
         </Route>
 
         {/* 评委路由 */}

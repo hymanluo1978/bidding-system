@@ -80,6 +80,12 @@ app.use('/api/judges', require('./routes/judges'));
 // 评标路由
 app.use('/api/evaluation', require('./routes/evaluation'));
 
+// 评标权重配置路由
+app.use('/api/weights', require('./routes/weights'));
+
+// 询标澄清路由
+app.use('/api/clarifications', require('./routes/clarifications'));
+
 // ==================== 404 处理 ====================
 app.use(notFoundHandler);
 

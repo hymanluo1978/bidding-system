@@ -6,7 +6,8 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UserOutlined
+  UserOutlined,
+  QuestionCircleOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
@@ -16,6 +17,7 @@ const { Text } = Typography;
 const menuItems = [
   { key: '/supplier/tenders', icon: <FileTextOutlined />, label: '招标公告' },
   { key: '/supplier/my-bids', icon: <FormOutlined />, label: '我的投标' },
+  { key: '/supplier/clarifications', icon: <QuestionCircleOutlined />, label: '询标澄清' },
 ];
 
 export default function SupplierLayout() {
