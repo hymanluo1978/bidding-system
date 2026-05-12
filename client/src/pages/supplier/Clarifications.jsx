@@ -14,7 +14,7 @@ import {
 } from 'antd';
 import { PaperClipOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -230,7 +230,7 @@ const Clarifications = () => {
                               <span style={{ color: '#999', fontSize: 12 }}>
                                 ({formatFileSize(file.size)})
                               </span>
-                              <Button type="link" size="small" icon={<DownloadOutlined />} href={file.path} target="_blank">
+                              <Button type="link" size="small" icon={<DownloadOutlined />} href={getFileUrl(file.path)} target="_blank">
                                 下载
                               </Button>
                             </Space>

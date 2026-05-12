@@ -24,7 +24,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -394,7 +394,7 @@ const ScoreForm = () => {
                           type="link"
                           size="small"
                           icon={<DownloadOutlined />}
-                          href={file.path}
+                          href={getFileUrl(file.path)}
                           target="_blank"
                         >
                           下载

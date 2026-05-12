@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { SearchOutlined, EyeOutlined, EditOutlined, PaperClipOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import api, { getFileUrl } from '../../services/api';
 
 const { Title } = Typography;
 
@@ -278,7 +278,7 @@ const TenderList = () => {
                             type="link"
                             size="small"
                             icon={<DownloadOutlined />}
-                            href={file.path}
+                            href={getFileUrl(file.path)}
                             target="_blank"
                           >
                             下载

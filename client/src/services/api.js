@@ -2,6 +2,17 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
+export const getFileUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  if (path.startsWith('/uploads/')) {
+    return `${baseURL}${path}`;
+  }
+  return `${baseURL}/${path}`;
+};
+
 const api = axios.create({
   baseURL,
   timeout: 15000,
