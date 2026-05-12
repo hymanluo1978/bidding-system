@@ -7,13 +7,7 @@ export const getFileUrl = (path) => {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
-  if (path.startsWith('/uploads/')) {
-    return `${baseURL}${path}`;
-  }
-  if (path.startsWith('uploads/')) {
-    return `${baseURL}/${path}`;
-  }
-  return `${baseURL}/${path}`;
+  return path;
 };
 
 const api = axios.create({

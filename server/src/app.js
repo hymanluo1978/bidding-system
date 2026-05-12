@@ -41,7 +41,19 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.resolve(__dirname, '..', 'uplo
 if (typeof UPLOAD_DIR === 'string') {
   try { require('fs').mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 }
-app.use('/api/uploads', express.static(UPLOAD_DIR));
+console.log(`[Static] Upload directory: ${UPLOAD_DIR}`);
+
+// 直接用 express.static，不加前缀
+app.use('/uploads', express.static(UPLOAD_DIR, {
+  fallthrough: true,
+  maxAge: '1d'
+}));
+
+// 备用路由：/api/uploads 也映射到同一目录
+app.use('/api/uploads', express.static(UPLOAD_DIR, {
+  fallthrough: true,
+  maxAge: '1d'
+}));
 
 // 请求日志中间件（简易版）
 app.use((req, res, next) => {
