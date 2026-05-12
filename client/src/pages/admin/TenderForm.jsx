@@ -111,12 +111,12 @@ const TenderForm = () => {
           </Form.Item>
 
           <Form.Item
-            label="预算金额（元）"
+            label="限价金额（元）"
             name="budget"
-            rules={[{ required: true, message: '请输入预算金额' }]}
+            extra="设置限价金额后，供应商可见；若不设置则表示不限价，供应商不可见"
           >
             <InputNumber
-              placeholder="请输入预算金额"
+              placeholder="不填写表示不限价"
               min={0}
               precision={2}
               style={{ width: '100%' }}

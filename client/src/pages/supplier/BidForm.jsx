@@ -204,10 +204,10 @@ const BidForm = () => {
                 return <Tag color={item.color}>{item.label}</Tag>;
               })()}
             </Descriptions.Item>
-            <Descriptions.Item label="预算金额">
-              {tender.budget != null
+            <Descriptions.Item label="限价金额">
+              {tender.budget != null && Number(tender.budget) > 0
                 ? `¥ ${Number(tender.budget).toLocaleString()}`
-                : '-'}
+                : '不限价'}
             </Descriptions.Item>
             <Descriptions.Item label="投标截止时间">
               {tender.bid_deadline

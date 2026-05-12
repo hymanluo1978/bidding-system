@@ -136,8 +136,9 @@ router.put('/:id', async (req, res, next) => {
 router.put('/:id/reset-password', async (req, res, next) => {
   try {
     const { new_password } = req.body;
-    if (!new_password || new_password.length < 6) {
-      return res.status(400).json({ code: 400, message: '新密码不能为空且至少6位' });
+    const password = new_password || '123456';
+    if (password.length < 6) {
+      return res.status(400).json({ code: 400, message: '新密码至少6位' });
     }
 
     const user = await User.findById(req.params.id);
@@ -145,8 +146,8 @@ router.put('/:id/reset-password', async (req, res, next) => {
       return res.status(404).json({ code: 404, message: '供应商不存在' });
     }
 
-    await User.updatePassword(req.params.id, new_password);
-    res.json({ code: 200, message: '密码重置成功' });
+    await User.updatePassword(req.params.id, password);
+    res.json({ code: 200, message: '密码已重置为: ' + password });
   } catch (err) {
     next(err);
   }

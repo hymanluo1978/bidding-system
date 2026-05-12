@@ -102,11 +102,11 @@ const TenderList = () => {
       ellipsis: true,
     },
     {
-      title: '预算金额',
+      title: '限价金额',
       dataIndex: 'budget',
       key: 'budget',
       width: 130,
-      render: (val) => (val != null ? `¥${Number(val).toLocaleString()}` : '-'),
+      render: (val) => (val != null && Number(val) > 0 ? `¥${Number(val).toLocaleString()}` : '不限价'),
     },
     {
       title: '状态',

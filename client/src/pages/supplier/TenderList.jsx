@@ -223,10 +223,10 @@ const TenderList = () => {
               <Descriptions.Item label="项目名称" span={2}>
                 {currentTender.title || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="预算金额">
-                {currentTender.budget != null
+              <Descriptions.Item label="限价金额">
+                {currentTender.budget != null && Number(currentTender.budget) > 0
                   ? `¥ ${Number(currentTender.budget).toLocaleString()}`
-                  : '-'}
+                  : '不限价'}
               </Descriptions.Item>
               <Descriptions.Item label="状态">
                 {(() => {
