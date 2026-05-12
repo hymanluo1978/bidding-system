@@ -7,6 +7,11 @@ export const getFileUrl = (path) => {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
+  // 拼接完整后端 URL
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+  if (apiBase && path.startsWith('/uploads/')) {
+    return `${apiBase}${path}`;
+  }
   return path;
 };
 

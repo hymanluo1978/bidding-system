@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 // 使用绝对路径，与 app.js 保持一致
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
-  : path.resolve(__dirname, '..', '..', 'uploads');
+  : path.resolve(__dirname, '..', 'uploads');
 
 // 确保上传目录存在
 const uploadDirs = {
