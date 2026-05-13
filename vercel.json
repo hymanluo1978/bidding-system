@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd client && npm install && npm run build:vercel",
+  "buildCommand": "cd client && npm install && VITE_BUILD_TARGET=vercel VITE_API_BASE_URL=https://bidding-system-api-m5nv.onrender.com/api npx vite build",
   "outputDirectory": "client/dist",
   "framework": "vite",
   "rewrites": [
