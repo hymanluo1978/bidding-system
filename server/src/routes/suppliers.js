@@ -125,7 +125,17 @@ router.put('/:id', async (req, res, next) => {
       return res.status(404).json({ code: 404, message: '供应商不存在' });
     }
 
-    await User.update(req.params.id, req.body);
+    const allowedFields = ['real_name', 'phone', 'email', 'company_name'];
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ code: 400, message: '没有要更新的字段' });
+    }
+    await User.update(req.params.id, updateData);
     res.json({ code: 200, message: '更新成功' });
   } catch (err) {
     next(err);
@@ -147,7 +157,7 @@ router.put('/:id/reset-password', async (req, res, next) => {
     }
 
     await User.updatePassword(req.params.id, password);
-    res.json({ code: 200, message: '密码已重置为: ' + password });
+    res.json({ code: 200, message: '密码已重置成功' });
   } catch (err) {
     next(err);
   }

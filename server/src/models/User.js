@@ -113,7 +113,7 @@ class User {
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, username, real_name, role, phone, email, company_name
           `, [item.username, hashedPassword, item.real_name || '', 'supplier', item.phone || '', item.email || '', item.company_name || '']);
-          results.push({ ...result.rows[0], password: item.password, success: true });
+          results.push({ id: result.rows[0].id, username: result.rows[0].username, real_name: result.rows[0].real_name, success: true });
         } catch (err) {
           results.push({ username: item.username, password: item.password, success: false, error: err?.message || '' });
         }

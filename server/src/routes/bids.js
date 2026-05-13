@@ -48,13 +48,11 @@ router.post('/', requireRole('supplier'), checkBidDeadline, upload.array('files'
       return res.status(400).json({ code: 400, message: '报价必须为正数' });
     }
 
-    // 检查是否已投标（包含有效投标，排除已撤回的）
     const existing = await Bid.findByTenderAndSupplier(tender_id, req.user.id);
     if (existing && existing.status !== 'withdrawn') {
       return res.status(400).json({ code: 400, message: '您已对此招标项目提交过有效投标' });
     }
 
-    // 处理上传的附件
     const attachments = (req.files || []).map(file => ({
       name: file.originalname,
       path: `/uploads/bids/${file.filename}`,
@@ -62,14 +60,22 @@ router.post('/', requireRole('supplier'), checkBidDeadline, upload.array('files'
       mimetype: file.mimetype
     }));
 
-    const bid = await Bid.create({
-      tender_id,
-      supplier_id: req.user.id,
-      bid_price: bidPrice,
-      technical_proposal: technical_proposal || '',
-      business_proposal: business_proposal || '',
-      attachments
-    });
+    let bid;
+    try {
+      bid = await Bid.create({
+        tender_id,
+        supplier_id: req.user.id,
+        bid_price: bidPrice,
+        technical_proposal: technical_proposal || '',
+        business_proposal: business_proposal || '',
+        attachments
+      });
+    } catch (dbErr) {
+      if (dbErr.code === '23505') {
+        return res.status(400).json({ code: 400, message: '您已对此招标项目提交过有效投标' });
+      }
+      throw dbErr;
+    }
 
     res.json({ code: 200, message: '投标提交成功', data: bid });
   } catch (err) {

@@ -28,7 +28,7 @@ class Tender {
     const fields = [];
     const values = [];
     let paramIndex = 1;
-    const allowedFields = ['title', 'category', 'budget', 'description', 'requirements', 'qualification_requirements', 'bid_deadline', 'open_bid_date', 'status', 'publish_date', 'attachments'];
+    const allowedFields = ['title', 'project_number', 'category', 'budget', 'description', 'requirements', 'qualification_requirements', 'bid_deadline', 'open_bid_date', 'status', 'publish_date', 'attachments'];
     
     console.log(`[Tender.update] Updating tender ${id} with data:`, JSON.stringify(data));
     

@@ -15,6 +15,7 @@ const uploadDirs = {
   tenders: path.join(UPLOAD_DIR, 'tenders'),
   bids: path.join(UPLOAD_DIR, 'bids'),
   avatars: path.join(UPLOAD_DIR, 'avatars'),
+  clarifications: path.join(UPLOAD_DIR, 'clarifications'),
   general: path.join(UPLOAD_DIR, 'general')
 };
 
@@ -33,6 +34,7 @@ const storage = multer.diskStorage({
     if (urlPath.includes('/tenders/')) category = 'tenders';
     else if (urlPath.includes('/bids')) category = 'bids';
     else if (urlPath.includes('/avatar')) category = 'avatars';
+    else if (urlPath.includes('/clarifications')) category = 'clarifications';
 
     const dir = uploadDirs[category] || uploadDirs.general;
     cb(null, dir);

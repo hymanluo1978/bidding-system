@@ -163,7 +163,7 @@ router.put('/:id/reset-password', async (req, res, next) => {
     }
 
     await User.updatePassword(judge.user_id, password);
-    res.json({ code: 200, message: '密码已重置为: ' + password });
+    res.json({ code: 200, message: '密码已重置成功' });
   } catch (err) {
     next(err);
   }

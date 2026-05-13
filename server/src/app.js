@@ -16,9 +16,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   ? (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
   : '*';
 
-// 如果生产环境未配置允许域名，默认放行（开发阶段安全）
 if (Array.isArray(allowedOrigins) && allowedOrigins.length === 0) {
-  allowedOrigins.push('*');
+  console.warn('[CORS] 生产环境未配置 ALLOWED_ORIGINS，将拒绝跨域请求');
 }
 
 app.use(cors({
@@ -44,20 +43,16 @@ if (typeof UPLOAD_DIR === 'string') {
 }
 console.log(`[Static] Upload directory: ${UPLOAD_DIR}`);
 
-// 诊断端点
-app.get('/api/debug/paths', (req, res) => {
-  res.json({
-    uploadDir: UPLOAD_DIR,
-    __dirname: __dirname,
-    resolvedPath: path.resolve(__dirname, '..', 'uploads'),
-    envUploadDir: process.env.UPLOAD_DIR || 'not set'
-  });
-});
+
 
 // 文件下载路由 - 正确处理二进制文件
 app.get('/uploads/*', (req, res, next) => {
   const filePath = req.params[0];
-  const fullPath = path.join(UPLOAD_DIR, filePath);
+  const fullPath = path.resolve(UPLOAD_DIR, filePath);
+  
+  if (!fullPath.startsWith(path.resolve(UPLOAD_DIR))) {
+    return res.status(403).json({ code: 403, message: '禁止访问', errorCode: 'FORBIDDEN' });
+  }
   
   fs.readFile(fullPath, (err, data) => {
     if (err) {
@@ -95,7 +90,11 @@ app.get('/uploads/*', (req, res, next) => {
 // 备用下载路由
 app.get('/api/uploads/*', (req, res, next) => {
   const filePath = req.params[0];
-  const fullPath = path.join(UPLOAD_DIR, filePath);
+  const fullPath = path.resolve(UPLOAD_DIR, filePath);
+  
+  if (!fullPath.startsWith(path.resolve(UPLOAD_DIR))) {
+    return res.status(403).json({ code: 403, message: '禁止访问', errorCode: 'FORBIDDEN' });
+  }
   
   fs.readFile(fullPath, (err, data) => {
     if (err) {

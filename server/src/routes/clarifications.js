@@ -62,6 +62,28 @@ router.get('/my-requests', requireRole('supplier'), async (req, res, next) => {
   }
 });
 
+// 管理员/评委：创建询标请求
+router.post('/', requireRole('admin', 'manager', 'judge'), async (req, res, next) => {
+  try {
+    const { tender_id, bid_id, request_content } = req.body;
+
+    if (!tender_id || !bid_id || !request_content || !request_content.trim()) {
+      return res.status(400).json({ code: 400, message: '招标项目ID、投标ID和询标内容不能为空' });
+    }
+
+    const { v4: uuidv4 } = require('uuid');
+    const id = uuidv4();
+    await query(`
+      INSERT INTO clarification_requests (id, tender_id, bid_id, request_content)
+      VALUES ($1, $2, $3, $4)
+    `, [id, tender_id, bid_id, request_content.trim()]);
+
+    res.json({ code: 200, message: '询标请求已提交', data: { id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 供应商：提交澄清回复
 router.post('/:requestId/respond', requireRole('supplier'), upload.array('files', 5), (req, res, next) => {
   const { response_content } = req.body;

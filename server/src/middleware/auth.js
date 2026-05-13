@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bidding_system_secret_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET 环境变量未设置，服务不安全');
+}
 
 // 生成 JWT token
 function generateToken(user) {

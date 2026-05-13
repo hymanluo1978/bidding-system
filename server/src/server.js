@@ -4,10 +4,19 @@
 
 const app = require('./app');
 const { initDatabase, pool } = require('./config/database');
+const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 3001;
 
-// 初始化数据库并启动服务
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', { error: err.message, stack: err.stack });
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection:', { reason: reason?.message || reason, stack: reason?.stack });
+});
+
 async function startServer() {
   try {
     await initDatabase();
@@ -24,22 +33,21 @@ async function startServer() {
       console.log('=================================');
     });
   } catch (err) {
-    console.error('启动失败:', err);
+    logger.error('启动失败:', { error: err.message, stack: err.stack });
     process.exit(1);
   }
 }
 
 startServer();
 
-// 优雅退出
 process.on('SIGTERM', async () => {
-  console.log('收到 SIGTERM 信号，正在关闭服务...');
-  await pool.end();
+  logger.info('收到 SIGTERM 信号，正在关闭服务...');
+  try { await pool.end(); } catch (e) { /* ignore */ }
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('\n收到 SIGINT 信号，正在关闭服务...');
-  await pool.end();
+  logger.info('收到 SIGINT 信号，正在关闭服务...');
+  try { await pool.end(); } catch (e) { /* ignore */ }
   process.exit(0);
 });

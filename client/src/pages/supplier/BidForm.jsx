@@ -125,7 +125,7 @@ const BidForm = () => {
       const values = form.getFieldsValue();
 
       formData.append('tender_id', tenderId);
-      formData.append('bid_price', values.price);
+      formData.append('bid_price', values.price != null ? values.price : '');
       formData.append('technical_proposal', values.technicalProposal || '');
       formData.append('business_proposal', values.commercialProposal || '');
 

@@ -132,6 +132,10 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res, next) => {
       return res.status(404).json({ code: 404, message: '招标项目不存在' });
     }
 
+    if (tender.status !== 'draft') {
+      return res.status(400).json({ code: 400, message: '只有草稿状态的招标才能编辑' });
+    }
+
     const data = {
       ...req.body,
       qualification_requirements: req.body.qualification_requirements || req.body.qualification,

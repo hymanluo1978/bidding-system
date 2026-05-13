@@ -77,7 +77,15 @@ router.get('/committee/:tenderId', requireRole('admin', 'manager'), async (req, 
     }
 
     // 获取评委详细信息
-    const judgeIds = JSON.parse(committee.judge_ids);
+    let judgeIds;
+    try {
+      judgeIds = JSON.parse(committee.judge_ids);
+    } catch (e) {
+      judgeIds = [];
+    }
+    if (!Array.isArray(judgeIds)) {
+      judgeIds = [];
+    }
     const placeholders = judgeIds.map((_, i) => `$${i + 1}`).join(',');
     const judges = await query(`
       SELECT j.id, j.specialty, j.title, u.username, u.real_name, u.phone

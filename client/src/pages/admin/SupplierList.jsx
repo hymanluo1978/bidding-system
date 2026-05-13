@@ -24,8 +24,8 @@ import api from '../../services/api';
 const { Option } = Select;
 
 const statusMap = {
-  active: { label: '正常', color: 'green' },
-  disabled: { label: '已禁用', color: 'red' },
+  1: { label: '正常', color: 'green' },
+  0: { label: '已禁用', color: 'red' },
 };
 
 const SupplierList = () => {
@@ -97,10 +97,10 @@ const SupplierList = () => {
   };
 
   const handleToggleStatus = async (id, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
+    const newStatus = currentStatus === 1 ? 0 : 1;
     try {
       await api.put(`/suppliers/${id}/toggle-status`);
-      message.success(newStatus === 'active' ? '已启用' : '已禁用');
+      message.success(newStatus === 1 ? '已启用' : '已禁用');
       fetchData();
     } catch (error) {
       console.error('操作失败:', error);
@@ -251,7 +251,7 @@ const SupplierList = () => {
               size="small"
               onClick={() => handleToggleStatus(id, record.status)}
             >
-              {record.status === 'active' ? '禁用' : '启用'}
+              {record.status === 1 ? '禁用' : '启用'}
             </Button>
             <Popconfirm
               title="确定要删除该供应商吗？"
@@ -293,8 +293,8 @@ const SupplierList = () => {
               allowClear
               style={{ width: 120 }}
             >
-              <Option value="active">正常</Option>
-              <Option value="disabled">已禁用</Option>
+              <Option value="1">正常</Option>
+              <Option value="0">已禁用</Option>
             </Select>
             <Button type="primary" onClick={handleSearch}>
               搜索

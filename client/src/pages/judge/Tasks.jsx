@@ -86,9 +86,10 @@ const Tasks = () => {
       width: 100,
       render: (status) => {
         const map = {
-          pending: { label: '待评标', color: 'warning' },
-          in_progress: { label: '评标中', color: 'processing' },
+          evaluation: { label: '评标中', color: 'processing' },
           completed: { label: '已完成', color: 'success' },
+          published: { label: '待评标', color: 'warning' },
+          bidding: { label: '招标中', color: 'processing' },
         };
         const item = map[status] || { label: status || '未知', color: 'default' };
         return <Tag color={item.color}>{item.label}</Tag>;

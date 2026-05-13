@@ -19,8 +19,9 @@ const { Title } = Typography;
 const bidStatusMap = {
   submitted: { label: '已提交', color: 'blue' },
   withdrawn: { label: '已撤回', color: 'default' },
+  disqualified: { label: '已废标', color: 'red' },
   won: { label: '已中标', color: 'green' },
-  lost: { label: '未中标', color: 'red' },
+  lost: { label: '未中标', color: 'orange' },
 };
 
 const MyBids = () => {

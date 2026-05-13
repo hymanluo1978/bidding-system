@@ -7,17 +7,19 @@ const logger = require('../utils/logger');
 
 // 错误码映射
 const ERROR_CODES = {
-  // 数据库错误
   '23505': { status: 409, message: '数据已存在', code: 'DUPLICATE_ENTRY' },
   '23503': { status: 400, message: '关联数据不存在', code: 'FOREIGN_KEY_VIOLATION' },
   '23502': { status: 400, message: '必填字段不能为空', code: 'NOT_NULL_VIOLATION' },
   '22P02': { status: 400, message: '数据格式错误', code: 'INVALID_TEXT_REPRESENTATION' },
+  '42703': { status: 400, message: '字段不存在', code: 'UNDEFINED_COLUMN' },
+  '22001': { status: 400, message: '数据超长', code: 'STRING_DATA_RIGHT_TRUNCATION' },
   
-  // JWT 错误
   'JsonWebTokenError': { status: 401, message: '无效的令牌', code: 'INVALID_TOKEN' },
   'TokenExpiredError': { status: 401, message: '令牌已过期', code: 'TOKEN_EXPIRED' },
+  'NotBeforeError': { status: 401, message: '令牌尚未生效', code: 'TOKEN_NOT_ACTIVE' },
   
-  // 默认错误
+  'MulterError': { status: 400, message: '文件上传错误', code: 'UPLOAD_ERROR' },
+  
   'DEFAULT': { status: 500, message: '服务器内部错误', code: 'INTERNAL_ERROR' }
 };
 
@@ -25,7 +27,10 @@ const ERROR_CODES = {
  * 全局错误处理中间件
  */
 function errorHandler(err, req, res, next) {
-  // 记录错误日志
+  if (res.headersSent) {
+    return next(err);
+  }
+
   logger.error('Error occurred:', {
     error: err.message,
     stack: err.stack,
@@ -35,7 +40,6 @@ function errorHandler(err, req, res, next) {
     code: err.code
   });
 
-  // PostgreSQL 错误
   if (err.code && ERROR_CODES[err.code]) {
     const errorInfo = ERROR_CODES[err.code];
     return res.status(errorInfo.status).json({
@@ -45,7 +49,6 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  // JWT 错误
   if (err.name && ERROR_CODES[err.name]) {
     const errorInfo = ERROR_CODES[err.name];
     return res.status(errorInfo.status).json({
@@ -55,7 +58,18 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  // 自定义业务错误
+  if (err.name === 'MulterError') {
+    let message = '文件上传错误';
+    if (err.code === 'LIMIT_FILE_SIZE') message = '文件大小超过限制';
+    if (err.code === 'LIMIT_FILE_COUNT') message = '文件数量超过限制';
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') message = '意外的文件字段';
+    return res.status(400).json({
+      code: 400,
+      message,
+      errorCode: 'UPLOAD_ERROR'
+    });
+  }
+
   if (err.statusCode) {
     return res.status(err.statusCode).json({
       code: err.statusCode,
@@ -64,7 +78,22 @@ function errorHandler(err, req, res, next) {
     });
   }
 
-  // 生产环境隐藏详细错误
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      code: 400,
+      message: '请求体JSON格式错误',
+      errorCode: 'INVALID_JSON'
+    });
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      code: 413,
+      message: '请求数据过大',
+      errorCode: 'PAYLOAD_TOO_LARGE'
+    });
+  }
+
   const isProduction = process.env.NODE_ENV === 'production';
   const defaultError = ERROR_CODES['DEFAULT'];
   
