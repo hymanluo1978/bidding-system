@@ -18,6 +18,8 @@ import JudgeForm from './pages/admin/JudgeForm';
 import EvaluationList from './pages/admin/EvaluationList';
 import EvaluationDetail from './pages/admin/EvaluationDetail';
 import UserManagement from './pages/admin/UserManagement';
+import AnnouncementList from './pages/admin/AnnouncementList';
+import OperationLogs from './pages/admin/OperationLogs';
 
 // 供应商页面
 import SupplierTenders from './pages/supplier/TenderList';
@@ -51,6 +53,44 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+let sessionValidated = false;
+let sessionValidationPromise = null;
+
+async function validateSession() {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+
+  if (sessionValidated) return true;
+
+  if (sessionValidationPromise) return sessionValidationPromise;
+
+  sessionValidationPromise = (async () => {
+    try {
+      const api = (await import('./services/api')).default;
+      const res = await api.get('/auth/session');
+      const serverUser = res.data?.data;
+      if (serverUser && serverUser.status === 0) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionValidated = false;
+        return false;
+      }
+      if (serverUser) {
+        localStorage.setItem('user', JSON.stringify(serverUser));
+      }
+      sessionValidated = true;
+      return true;
+    } catch (e) {
+      sessionValidated = false;
+      return false;
+    } finally {
+      sessionValidationPromise = null;
+    }
+  })();
+
+  return sessionValidationPromise;
+}
+
 function App() {
   return (
     <BrowserRouter basename="/bidding-system">
@@ -75,6 +115,8 @@ function App() {
           <Route path="evaluation" element={<EvaluationList />} />
           <Route path="evaluation/:tenderId" element={<EvaluationDetail />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="announcements" element={<AnnouncementList />} />
+          <Route path="logs" element={<OperationLogs />} />
         </Route>
 
         {/* 供应商路由 */}

@@ -87,4 +87,17 @@ router.get('/me', authenticate, async (req, res) => {
   res.json({ code: 200, data: req.user });
 });
 
+router.get('/session', authenticate, (req, res) => {
+  res.json({
+    code: 200,
+    data: {
+      id: req.user.id,
+      username: req.user.username,
+      real_name: req.user.real_name,
+      role: req.user.role,
+      status: req.user.status
+    }
+  });
+});
+
 module.exports = router;

@@ -105,16 +105,31 @@ const TenderForm = () => {
         ...values,
         bidDeadline: values.bidDeadline ? values.bidDeadline.format('YYYY-MM-DD HH:mm:ss') : null,
         openTime: values.openTime ? values.openTime.format('YYYY-MM-DD HH:mm:ss') : null,
-        attachments: attachments,
       };
+
+      let tenderId = id;
 
       if (isEdit) {
         await api.put(`/tenders/${id}`, payload);
         message.success('更新成功');
       } else {
-        await api.post('/tenders', payload);
+        const res = await api.post('/tenders', payload);
+        tenderId = res.data?.data?.id;
         message.success('创建成功');
       }
+
+      if (tenderId && attachments.length > 0) {
+        for (const file of attachments) {
+          if (file.originFileObj) {
+            const formData = new FormData();
+            formData.append('files', file.originFileObj);
+            await api.post(`/tenders/${tenderId}/upload`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            }).catch(err => console.error('附件上传失败:', err));
+          }
+        }
+      }
+
       navigate('/admin/tenders');
     } catch (error) {
       console.error('提交失败:', error);
@@ -278,9 +293,55 @@ const TenderForm = () => {
                 )}
               </>
             ) : (
-              <div style={{ color: '#999' }}>
-                请先创建招标项目后再上传附件
-              </div>
+              <>
+                <Upload
+                  beforeUpload={(file) => {
+                    const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (!allowedExtensions.includes(ext)) {
+                      message.error(`不支持的文件格式：.${ext}`);
+                      return false;
+                    }
+                    if (file.size / 1024 / 1024 > 20) {
+                      message.error('文件大小不能超过 20MB');
+                      return false;
+                    }
+                    setAttachments(prev => [...prev, {
+                      id: Date.now() + Math.random(),
+                      name: file.name,
+                      size: file.size,
+                      originFileObj: file
+                    }]);
+                    return false;
+                  }}
+                  showUploadList={false}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                >
+                  <Button icon={<UploadOutlined />}>选择附件</Button>
+                </Upload>
+                {attachments.length > 0 && (
+                  <List
+                    size="small"
+                    style={{ marginTop: 16 }}
+                    dataSource={attachments}
+                    renderItem={(file) => (
+                      <List.Item
+                        actions={[
+                          <Button key="del" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteAttachment(file.id)}>
+                            删除
+                          </Button>
+                        ]}
+                      >
+                        <Space>
+                          <PaperClipOutlined />
+                          <span>{file.name}</span>
+                          <span style={{ color: '#999', fontSize: 12 }}>({formatFileSize(file.size)})</span>
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </>
             )}
           </Form.Item>
 

@@ -184,6 +184,12 @@ app.use('/api/weights', require('./routes/weights'));
 // 询标澄清路由
 app.use('/api/clarifications', require('./routes/clarifications'));
 
+// 公告通知路由
+app.use('/api/announcements', require('./routes/announcements'));
+
+// 操作日志路由
+app.use('/api/logs', require('./routes/logs'));
+
 // 用户管理路由
 app.use('/api/users', require('./routes/users'));
 

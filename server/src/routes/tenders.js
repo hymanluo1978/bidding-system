@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const Tender = require('../models/Tender');
 const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { query } = require('../config/database');
 const dayjs = require('dayjs');
 const { validate, schemas } = require('../middleware/validate');
 const Joi = require('joi');
@@ -20,9 +21,61 @@ function normalizeTender(item) {
   return result;
 }
 
+const VALID_TRANSITIONS = {
+  draft: ['published', 'cancelled'],
+  published: ['bidding', 'cancelled'],
+  bidding: ['evaluation', 'cancelled'],
+  evaluation: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: ['draft']
+};
+
+function validateStatusTransition(currentStatus, newStatus) {
+  const allowed = VALID_TRANSITIONS[currentStatus];
+  if (!allowed || !allowed.includes(newStatus)) {
+    return `不允许从 '${currentStatus}' 状态变更为 '${newStatus}'，合法目标状态: [${(allowed || []).join(', ')}]`;
+  }
+  return null;
+}
+
 // 所有路由都需要认证
 router.use((req, res, next) => {
   authenticate(req, res, next).catch(next);
+});
+
+// Dashboard 统计数据
+router.get('/stats', requireRole('admin', 'manager'), async (req, res, next) => {
+  try {
+    const statsResult = await query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status NOT IN ('cancelled')) as total_tenders,
+        COUNT(*) FILTER (WHERE status IN ('published', 'bidding', 'evaluation')) as ongoing_tenders,
+        (SELECT COUNT(*) FROM users WHERE role = 'supplier' AND status = 1) as supplier_count,
+        (SELECT COUNT(*) FROM judges j LEFT JOIN users u ON j.user_id = u.id WHERE u.status = 1) as judge_count
+      FROM tenders
+    `);
+    const recentResult = await query(`
+      SELECT t.*, u.real_name as creator_name,
+        (SELECT COUNT(*) FROM bids WHERE tender_id = t.id) as bid_count
+      FROM tenders t
+      LEFT JOIN users u ON t.creator_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 5
+    `);
+    const row = statsResult.rows[0];
+    res.json({
+      code: 200,
+      data: {
+        totalTenders: parseInt(row.total_tenders) || 0,
+        ongoingTenders: parseInt(row.ongoing_tenders) || 0,
+        supplierCount: parseInt(row.supplier_count) || 0,
+        judgeCount: parseInt(row.judge_count) || 0,
+        recentTenders: recentResult.rows.map(normalizeTender)
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 获取招标列表（管理员）
@@ -173,6 +226,37 @@ router.put('/:id/publish', requireRole('admin', 'manager'), async (req, res, nex
   }
 });
 
+// 变更招标状态（状态机）
+router.put('/:id/status', requireRole('admin', 'manager'), async (req, res, next) => {
+  try {
+    const { status: newStatus } = req.body;
+    if (!newStatus) {
+      return res.status(400).json({ code: 400, message: '目标状态不能为空' });
+    }
+
+    const tender = await Tender.findById(req.params.id);
+    if (!tender) {
+      return res.status(404).json({ code: 404, message: '招标项目不存在' });
+    }
+
+    const error = validateStatusTransition(tender.status, newStatus);
+    if (error) {
+      return res.status(400).json({ code: 400, message: error });
+    }
+
+    const updateData = { status: newStatus };
+    if (newStatus === 'published') {
+      updateData.publish_date = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    }
+
+    await Tender.update(req.params.id, updateData);
+    const updatedTender = await Tender.findById(req.params.id);
+    res.json({ code: 200, message: '状态变更成功', data: normalizeTender(updatedTender) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 上传招标书文件
 router.post('/:id/upload', requireRole('admin', 'manager'), (req, res, next) => {
   upload.array('files', 10)(req, res, (err) => {
@@ -217,6 +301,37 @@ router.post('/:id/upload', requireRole('admin', 'manager'), (req, res, next) => 
       }
     })();
   });
+});
+
+// 删除招标附件
+router.delete('/:id/attachments/:fileId', requireRole('admin', 'manager'), async (req, res, next) => {
+  try {
+    const tender = await Tender.findById(req.params.id);
+    if (!tender) {
+      return res.status(404).json({ code: 404, message: '招标项目不存在' });
+    }
+
+    const existingAttachments = tender.attachments || [];
+    const fileIndex = existingAttachments.findIndex(f => f.id === req.params.fileId);
+    if (fileIndex === -1) {
+      return res.status(404).json({ code: 404, message: '附件不存在' });
+    }
+
+    const fileToDelete = existingAttachments[fileIndex];
+    if (fileToDelete.path) {
+      const UPLOAD_DIR = process.env.UPLOAD_DIR || require('path').resolve(__dirname, '..', '..', 'uploads');
+      const fullPath = require('path').resolve(UPLOAD_DIR, fileToDelete.path.replace(/^\/uploads\//, ''));
+      if (fullPath.startsWith(require('path').resolve(UPLOAD_DIR))) {
+        try { require('fs').unlinkSync(fullPath); } catch (e) { /* file may not exist on disk */ }
+      }
+    }
+
+    existingAttachments.splice(fileIndex, 1);
+    await Tender.update(req.params.id, { attachments: existingAttachments });
+    res.json({ code: 200, message: '附件已删除' });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 删除招标项目（仅系统管理员）

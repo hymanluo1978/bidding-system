@@ -39,37 +39,16 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [tendersRes, suppliersRes, judgesRes] = await Promise.all([
-        api.get('/tenders', { params: { page: 1, pageSize: 5 } }).catch(() => ({ data: { data: { list: [], total: 0 } } })),
-        api.get('/suppliers', { params: { page: 1, pageSize: 1 } }).catch(() => ({ data: { data: { total: 0 } } })),
-        api.get('/judges').catch(() => ({ data: { data: [] } })),
-      ]);
-
-      const tendersData = tendersRes.data?.data || tendersRes.data || {};
-      const tendersList = tendersData.list || tendersData.items || tendersData || [];
-      const tendersTotal = tendersData.total || tendersList.length;
-
-      const suppliersData = suppliersRes.data?.data || suppliersRes.data || {};
-      const supplierCount = suppliersData.total || 0;
-
-      const judgesData = judgesRes.data?.data || judgesRes.data || [];
-      const judgeCount = Array.isArray(judgesData)
-        ? judgesData.length
-        : judgesData.total || 0;
-
-      const ongoingCount = Array.isArray(tendersList)
-        ? tendersList.filter(
-            (t) => t.status === 'published' || t.status === 'bidding' || t.status === 'evaluation'
-          ).length
-        : 0;
+      const res = await api.get('/tenders/stats');
+      const data = res.data?.data || {};
 
       setStats({
-        totalTenders: tendersTotal,
-        ongoingTenders: ongoingCount,
-        supplierCount,
-        judgeCount,
+        totalTenders: data.totalTenders || 0,
+        ongoingTenders: data.ongoingTenders || 0,
+        supplierCount: data.supplierCount || 0,
+        judgeCount: data.judgeCount || 0,
       });
-      setRecentTenders(Array.isArray(tendersList) ? tendersList : []);
+      setRecentTenders(Array.isArray(data.recentTenders) ? data.recentTenders : []);
     } catch (error) {
       console.error('获取工作台数据失败:', error);
     } finally {

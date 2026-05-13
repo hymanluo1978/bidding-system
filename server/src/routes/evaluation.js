@@ -127,7 +127,22 @@ router.post('/score', requireRole('judge'), async (req, res, next) => {
     const tScore = Math.max(0, Math.min(100, parseFloat(technical_score) || 0));
     const bScore = Math.max(0, Math.min(100, parseFloat(business_score) || 0));
     const pScore = Math.max(0, Math.min(100, parseFloat(price_score) || 0));
-    const total_score = tScore + bScore + pScore;
+
+    let weights = { technical: 40, business: 30, price: 30 };
+    try {
+      const weightResult = await query('SELECT * FROM evaluation_weights WHERE tender_id = $1', [tender_id]);
+      if (weightResult.rows[0]) {
+        weights = {
+          technical: parseFloat(weightResult.rows[0].technical_weight) || 40,
+          business: parseFloat(weightResult.rows[0].business_weight) || 30,
+          price: parseFloat(weightResult.rows[0].price_weight) || 30
+        };
+      }
+    } catch (e) { /* use defaults */ }
+
+    const total_score = parseFloat(
+      (tScore * weights.technical + bScore * weights.business + pScore * weights.price) / 100
+    ).toFixed(2);
 
     await Evaluation.createOrUpdate({
       tender_id,
@@ -269,6 +284,37 @@ router.post('/confirm-result', requireRole('admin', 'manager'), async (req, res,
     });
 
     res.json({ code: 200, message: '评标结果已确认' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 管理员：导出评标结果
+router.get('/export/:tenderId', requireRole('admin', 'manager'), async (req, res, next) => {
+  try {
+    let weights = { technical: 40, business: 30, price: 30 };
+    const weightResult = await query('SELECT * FROM evaluation_weights WHERE tender_id = $1', [req.params.tenderId]);
+    if (weightResult.rows[0]) {
+      weights = {
+        technical: parseFloat(weightResult.rows[0].technical_weight) || 40,
+        business: parseFloat(weightResult.rows[0].business_weight) || 30,
+        price: parseFloat(weightResult.rows[0].price_weight) || 30
+      };
+    }
+
+    const result = await Evaluation.calculateResult(req.params.tenderId, weights);
+    const tenderResult = await query('SELECT title, project_number FROM tenders WHERE id = $1', [req.params.tenderId]);
+    const tender = tenderResult.rows[0] || {};
+
+    const header = `招标项目: ${tender.title || ''}\n项目编号: ${tender.project_number || ''}\n权重配置: 技术${weights.technical}% 商务${weights.business}% 价格${weights.price}%\n\n排名,供应商,公司,投标报价,技术分,商务分,价格分,加权总分,评委数\n`;
+    const rows = (result.results || []).map((r, idx) =>
+      `${idx + 1},"${r.real_name || ''}","${r.company_name || ''}",${r.bid_price || 0},${r.avg_technical || 0},${r.avg_business || 0},${r.avg_price || 0},${r.avg_total || 0},${r.eval_count || 0}`
+    ).join('\n');
+
+    const csv = '\uFEFF' + header + rows;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="evaluation_${tender.project_number || req.params.tenderId}.csv"`);
+    res.send(csv);
   } catch (err) {
     next(err);
   }

@@ -9,7 +9,9 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  SettingOutlined
+  SettingOutlined,
+  NotificationOutlined,
+  AuditOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
@@ -22,6 +24,8 @@ const menuItems = [
   { key: '/admin/suppliers', icon: <TeamOutlined />, label: '供应商管理' },
   { key: '/admin/judges', icon: <UserOutlined />, label: '评委管理' },
   { key: '/admin/evaluation', icon: <TrophyOutlined />, label: '评标管理' },
+  { key: '/admin/announcements', icon: <NotificationOutlined />, label: '公告管理' },
+  { key: '/admin/logs', icon: <AuditOutlined />, label: '操作日志' },
   { key: '/admin/users', icon: <SettingOutlined />, label: '用户管理' },
 ];
 

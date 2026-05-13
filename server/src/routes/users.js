@@ -203,15 +203,41 @@ router.delete('/:id', authenticate, requireRole('admin'), async (req, res, next)
     if (id === req.user.id) {
       return res.status(400).json({ code: 400, message: '不能删除自己' });
     }
-    
-    const result = await require('../config/database').query(
-      `DELETE FROM users WHERE id = $1 AND role != 'admin' RETURNING id`,
-      [id]
+
+    const userResult = await require('../config/database').query(
+      'SELECT id, role FROM users WHERE id = $1', [id]
     );
-    
-    if (result.rows.length === 0) {
-      return res.status(400).json({ code: 400, message: '无法删除该用户（可能是管理员或用户不存在）' });
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    if (userResult.rows[0].role === 'admin') {
+      return res.status(400).json({ code: 400, message: '不能删除管理员' });
+    }
+
+    const { transaction } = require('../utils/transaction');
+    await transaction(async (client) => {
+      const userId = id;
+
+      const judgeResult = await client.query('SELECT id FROM judges WHERE user_id = $1', [userId]);
+      if (judgeResult.rows.length > 0) {
+        const judgeId = judgeResult.rows[0].id;
+        await client.query('DELETE FROM evaluations WHERE judge_id = $1', [judgeId]);
+        await client.query('DELETE FROM evaluation_committees WHERE leader_id = $1', [judgeId]);
+        await client.query('DELETE FROM judges WHERE id = $1', [judgeId]);
+      }
+
+      const bidIds = await client.query('SELECT id FROM bids WHERE supplier_id = $1', [userId]);
+      if (bidIds.rows.length > 0) {
+        const ids = bidIds.rows.map(r => r.id);
+        await client.query('DELETE FROM evaluations WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM clarification_responses WHERE request_id IN (SELECT id FROM clarification_requests WHERE bid_id = ANY($1))', [ids]);
+        await client.query('DELETE FROM clarification_requests WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM bids WHERE supplier_id = $1', [userId]);
+      }
+
+      await client.query('DELETE FROM operation_logs WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+    });
     
     res.json({ code: 200, message: '删除成功' });
   } catch (err) {

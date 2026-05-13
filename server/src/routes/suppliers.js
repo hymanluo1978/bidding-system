@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const { authenticate, requireRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const { validate, schemas } = require('../middleware/validate');
 const Joi = require('joi');
 
@@ -35,6 +36,26 @@ router.get('/', async (req, res, next) => {
       pageSize: parseInt(pageSize, 10) || 20
     });
     res.json({ code: 200, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 导出供应商CSV
+router.get('/export', async (req, res, next) => {
+  try {
+    const result = await User.findAll({ role: 'supplier', pageSize: 10000 });
+    const list = result.list || [];
+
+    const header = '用户名,姓名,公司,电话,邮箱,状态\n';
+    const rows = list.map(s =>
+      `"${s.username}","${s.real_name || ''}","${s.company_name || ''}","${s.phone || ''}","${s.email || ''}","${s.status === 1 ? '正常' : '已禁用'}"`
+    ).join('\n');
+
+    const csv = '\uFEFF' + header + rows;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="suppliers.csv"');
+    res.send(csv);
   } catch (err) {
     next(err);
   }
@@ -92,10 +113,52 @@ router.post('/', validate({
   }
 });
 
-// 批量创建供应商
-router.post('/batch', async (req, res, next) => {
+// 批量创建供应商（支持 JSON 数组或 CSV 文件上传）
+router.post('/batch', upload.single('file'), async (req, res, next) => {
   try {
-    let { suppliers } = req.body;
+    let suppliers;
+
+    if (req.file) {
+      const csvContent = req.file.buffer.toString('utf-8').replace(/^\uFEFF/, '');
+      const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
+      if (lines.length < 2) {
+        return res.status(400).json({ code: 400, message: 'CSV文件至少需要包含表头和一行数据' });
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      suppliers = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        for (const char of lines[i]) {
+          if (char === '"') { inQuotes = !inQuotes; }
+          else if (char === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+          else { current += char; }
+        }
+        values.push(current.trim());
+
+        const row = {};
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] || '';
+        });
+
+        suppliers.push({
+          username: row.username || row['用户名'] || '',
+          password: row.password || row['密码'] || '123456',
+          real_name: row.real_name || row.name || row['姓名'] || '',
+          phone: row.phone || row['电话'] || '',
+          email: row.email || row['邮箱'] || '',
+          company_name: row.company_name || row.company || row['公司'] || ''
+        });
+      }
+    } else {
+      suppliers = req.body.suppliers || req.body;
+      if (!Array.isArray(suppliers)) {
+        return res.status(400).json({ code: 400, message: '请提供供应商数组或上传CSV文件' });
+      }
+    }
+
     if (!Array.isArray(suppliers) || suppliers.length === 0) {
       return res.status(400).json({ code: 400, message: '供应商数据不能为空' });
     }
