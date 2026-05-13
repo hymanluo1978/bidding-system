@@ -499,6 +499,42 @@ const EvaluationDetail = () => {
           size="small"
           locale={{ emptyText: '暂无询标记录' }}
           style={{ marginBottom: 24 }}
+          expandable={{
+            expandedRowRender: (record) => (
+              <div style={{ padding: '12px 24px', background: '#fafafa' }}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>询标内容：</Text>
+                  <div style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{record.request_content}</div>
+                </div>
+                {record.responses && record.responses.length > 0 ? (
+                  <div>
+                    <Text strong>供应商回复：</Text>
+                    {record.responses.map((resp, idx) => (
+                      <Card key={resp.id || idx} size="small" style={{ marginTop: 8 }}>
+                        <div style={{ marginBottom: 8, whiteSpace: 'pre-wrap' }}>{resp.response_content}</div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          回复时间：{resp.response_date ? dayjs(resp.response_date).format('YYYY-MM-DD HH:mm') : '-'}
+                        </Text>
+                        {resp.attachments && resp.attachments.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <Text type="secondary">附件：</Text>
+                            {resp.attachments.map((file, fidx) => (
+                              <Button key={fidx} type="link" size="small" icon={<DownloadOutlined />} href={getFileUrl(file.path)} target="_blank">
+                                {file.name}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Text type="secondary">暂无回复</Text>
+                )}
+              </div>
+            ),
+            rowExpandable: (record) => record.request_content || (record.responses && record.responses.length > 0),
+          }}
         />
 
         <Divider />

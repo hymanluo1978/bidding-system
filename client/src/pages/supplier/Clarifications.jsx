@@ -11,8 +11,10 @@ import {
   List,
   Divider,
   Input,
+  Descriptions,
+  Upload,
 } from 'antd';
-import { PaperClipOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
+import { PaperClipOutlined, DownloadOutlined, FileTextOutlined, UploadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api, { getFileUrl } from '../../services/api';
 import dayjs from 'dayjs';
@@ -35,6 +37,7 @@ const Clarifications = () => {
   const [responseVisible, setResponseVisible] = useState(false);
   const [responseContent, setResponseContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [responseFiles, setResponseFiles] = useState([]);
 
   const fetchClarifications = useCallback(async () => {
     setLoading(true);
@@ -60,6 +63,7 @@ const Clarifications = () => {
   const handleOpenResponse = (record) => {
     setSelectedClarification(record);
     setResponseContent('');
+    setResponseFiles([]);
     setResponseVisible(true);
   };
 
@@ -70,12 +74,18 @@ const Clarifications = () => {
     }
     setSubmitting(true);
     try {
-      await api.post(`/clarifications/${selectedClarification.id}/respond`, {
-        response_content: responseContent,
+      const formData = new FormData();
+      formData.append('response_content', responseContent);
+      responseFiles.forEach(file => {
+        formData.append('files', file);
+      });
+      await api.post(`/clarifications/${selectedClarification.id}/respond`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       message.success('回复提交成功');
       setResponseVisible(false);
       setResponseContent('');
+      setResponseFiles([]);
       setSelectedClarification(null);
       fetchClarifications();
     } catch (err) {
@@ -253,11 +263,13 @@ const Clarifications = () => {
         onCancel={() => {
           setResponseVisible(false);
           setResponseContent('');
+          setResponseFiles([]);
           setSelectedClarification(null);
         }}
         okText="提交回复"
         cancelText="取消"
         confirmLoading={submitting}
+        width={600}
       >
         {selectedClarification && (
           <div>
@@ -265,7 +277,7 @@ const Clarifications = () => {
               <Text type="secondary">招标项目：</Text>
               {selectedClarification.tender_title}
             </p>
-            <p style={{ marginBottom: 16 }}>
+            <p style={{ marginBottom: 8 }}>
               <Text type="secondary">询标内容：</Text>
             </p>
             <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
@@ -278,10 +290,26 @@ const Clarifications = () => {
               placeholder="请输入回复内容..."
               maxLength={2000}
               showCount
+              style={{ marginBottom: 16 }}
             />
-            <p style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-              提示：您可以上传附件来补充说明回复内容
-            </p>
+            <Upload
+              beforeUpload={(file) => {
+                if (file.size > 20 * 1024 * 1024) {
+                  message.error('文件大小不能超过20MB');
+                  return false;
+                }
+                setResponseFiles(prev => [...prev, file]);
+                return false;
+              }}
+              onRemove={(file) => {
+                setResponseFiles(prev => prev.filter(f => f.uid !== file.uid));
+              }}
+              fileList={responseFiles}
+              multiple
+              maxCount={5}
+            >
+              <Button icon={<UploadOutlined />}>上传附件（最多5个，单个不超过20MB）</Button>
+            </Upload>
           </div>
         )}
       </Modal>

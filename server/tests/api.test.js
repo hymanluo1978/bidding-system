@@ -9,6 +9,8 @@ const httpModule = isHTTPS ? https : require('http');
 let adminToken = '';
 let supplierToken = '';
 let testTenderId = '';
+let testBidId = '';
+let testClarificationId = '';
 
 function request(method, path, data, token) {
   return new Promise((resolve, reject) => {
@@ -222,7 +224,72 @@ describe('招投标系统 API 测试', { concurrency: 1 }, () => {
     });
   });
 
-  describe('9. 健康检查', () => {
+  describe('9. 询标澄清模块', () => {
+    test('管理员获取询标列表', { timeout: 60000 }, async () => {
+      if (!testTenderId) return;
+      const res = await request('GET', `/api/clarifications/tender/${testTenderId}`, null, adminToken);
+      assert.equal(res.status, 200);
+      assert.ok(Array.isArray(res.data.data));
+    });
+
+    test('管理员创建询标请求', { timeout: 60000 }, async () => {
+      if (!testTenderId) return;
+      const bidsRes = await request('GET', `/api/bids/tender/${testTenderId}`, null, adminToken);
+      const bids = bidsRes.data?.data || [];
+      if (bids.length === 0) {
+        console.log('No bids found, skipping clarification test');
+        return;
+      }
+      testBidId = bids[0].id;
+      const res = await request('POST', '/api/clarifications', {
+        tender_id: testTenderId,
+        bid_id: testBidId,
+        request_content: '请提供更详细的技术方案说明'
+      }, adminToken);
+      assert.equal(res.status, 200, `Create clarification failed: ${JSON.stringify(res.data)}`);
+      testClarificationId = res.data.data?.id;
+    });
+
+    test('空内容创建询标请求', { timeout: 60000 }, async () => {
+      if (!testTenderId || !testBidId) return;
+      const res = await request('POST', '/api/clarifications', {
+        tender_id: testTenderId,
+        bid_id: testBidId,
+        request_content: ''
+      }, adminToken);
+      assert.equal(res.status, 400);
+    });
+
+    test('供应商获取自己的询标列表', { timeout: 60000 }, async () => {
+      const suppliersRes = await request('GET', '/api/suppliers?page=1&pageSize=1', null, adminToken);
+      const suppliers = suppliersRes.data?.data?.list || [];
+      if (suppliers.length === 0) {
+        console.log('No suppliers found, skipping');
+        return;
+      }
+      const supplier = suppliers[0];
+      const pwdRes = await request('PUT', `/api/suppliers/${supplier.id}/reset-password`, { new_password: 'test123456' }, adminToken);
+      if (pwdRes.status !== 200) {
+        console.log('Password reset failed, skipping');
+        return;
+      }
+      const loginRes = await request('POST', '/api/auth/login', { username: supplier.username, password: 'test123456' });
+      if (loginRes.status === 200 && loginRes.data.data.token) {
+        supplierToken = loginRes.data.data.token;
+        const res = await request('GET', '/api/clarifications/my-requests', null, supplierToken);
+        assert.equal(res.status, 200);
+        assert.ok(Array.isArray(res.data.data));
+      }
+    });
+
+    test('管理员关闭询标请求', { timeout: 60000 }, async () => {
+      if (!testClarificationId) return;
+      const res = await request('PUT', `/api/clarifications/${testClarificationId}/close`, null, adminToken);
+      assert.equal(res.status, 200);
+    });
+  });
+
+  describe('10. 健康检查', () => {
     test('健康检查端点', { timeout: 60000 }, async () => {
       const res = await request('GET', '/api/health');
       assert.equal(res.status, 200);
