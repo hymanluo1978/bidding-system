@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  bidding-db:
+    image: postgres:15-alpine
+    container_name: bidding-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bidding
+      POSTGRES_PASSWORD: bidding123
+      POSTGRES_DB: bidding
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bidding -d bidding"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端 API 服务
+  bidding-api:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: bidding-api
+    restart: unless-stopped
+    depends_on:
+      bidding-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://bidding:bidding123@bidding-db:5432/bidding
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 24h
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80,http://your-domain.com
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
+
+  # 前端服务
+  bidding-web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:3001/api
+    container_name: bidding-web
+    restart: unless-stopped
+    depends_on:
+      - bidding-api
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  uploads_data:
