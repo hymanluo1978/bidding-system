@@ -92,8 +92,9 @@ async function validateSession() {
 }
 
 function App() {
+  const basename = import.meta.env.VITE_BUILD_TARGET === 'vercel' ? '/' : '/bidding-system';
   return (
-    <BrowserRouter basename="/bidding-system">
+    <BrowserRouter basename={basename}>
       <ErrorBoundary>
         <Routes>
         <Route path="/login" element={<Login />} />
