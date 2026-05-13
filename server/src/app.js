@@ -12,22 +12,27 @@ const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/er
 const app = express();
 
 // ==================== CORS 中间件 ====================
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
-  : '*';
+const allowedOriginsEnv = process.env.ALLOWED_ORIGINS || '';
+const allowedOriginsList = allowedOriginsEnv.split(',').map(s => s.trim()).filter(Boolean);
 
-if (Array.isArray(allowedOrigins) && allowedOrigins.length === 0) {
-  console.warn('[CORS] 生产环境未配置 ALLOWED_ORIGINS，将拒绝跨域请求');
-}
+console.log(`[CORS] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[CORS] ALLOWED_ORIGINS: ${allowedOriginsList.join(', ') || '(未配置)'}`);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (allowedOrigins === '*' || (Array.isArray(allowedOrigins) && allowedOrigins.includes('*')) || !origin) return callback(null, true);
-    if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error('CORS 不允许的来源'));
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    if (allowedOriginsList.length === 0) {
+      console.warn(`[CORS] 允许未配置白名单的来源: ${origin}`);
+      return callback(null, true);
+    }
+    if (allowedOriginsList.includes(origin)) return callback(null, true);
+    console.warn(`[CORS] 拒绝来源: ${origin}`);
+    return callback(null, false);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // 解析 JSON 请求体
