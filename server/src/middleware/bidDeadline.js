@@ -31,7 +31,7 @@ async function checkBidDeadline(req, res, next) {
     req.tender = tender;
     next();
   } catch (err) {
-    return res.status(500).json({ code: 500, message: '检查投标截止时间失败', detail: err.message });
+    next(err);
   }
 }
 

@@ -179,6 +179,8 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     await transaction(async (client) => {
+      await client.query('DELETE FROM evaluations WHERE judge_id = $1', [req.params.id]);
+      await client.query('DELETE FROM evaluation_committees WHERE leader_id = $1', [req.params.id]);
       await client.query('DELETE FROM judges WHERE id = $1', [req.params.id]);
       await client.query('DELETE FROM users WHERE id = $1', [judge.user_id]);
     });

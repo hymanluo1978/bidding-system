@@ -41,7 +41,7 @@ router.put('/:tenderId', requireRole('admin', 'manager'), async (req, res, next)
     const bizWeight = Math.max(0, Math.min(100, parseFloat(business_weight) || 0));
     const priceWt = Math.max(0, Math.min(100, parseFloat(price_weight) || 0));
 
-    if (techWeight + bizWeight + priceWt !== 100) {
+    if (Math.abs(techWeight + bizWeight + priceWt - 100) > 0.01) {
       return res.status(400).json({ code: 400, message: '三个权重之和必须等于100%' });
     }
 

@@ -57,7 +57,7 @@ router.post('/committee', requireRole('admin', 'manager'), validate({
       `, [id, tender_id, JSON.stringify(judge_ids), leader_id]);
 
       // 更新招标状态为评标中
-      await Tender.update(tender_id, { status: 'evaluation' });
+      await client.query("UPDATE tenders SET status = 'evaluation', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [tender_id]);
     });
 
     res.json({ code: 200, message: '评标委员会组建成功' });
@@ -86,13 +86,16 @@ router.get('/committee/:tenderId', requireRole('admin', 'manager'), async (req, 
     if (!Array.isArray(judgeIds)) {
       judgeIds = [];
     }
-    const placeholders = judgeIds.map((_, i) => `$${i + 1}`).join(',');
-    const judges = await query(`
-      SELECT j.id, j.specialty, j.title, u.username, u.real_name, u.phone
-      FROM judges j
-      LEFT JOIN users u ON j.user_id = u.id
-      WHERE j.id IN (${placeholders})
-    `, judgeIds);
+    let judges = { rows: [] };
+    if (judgeIds.length > 0) {
+      const placeholders = judgeIds.map((_, i) => `$${i + 1}`).join(',');
+      judges = await query(`
+        SELECT j.id, j.specialty, j.title, u.username, u.real_name, u.phone
+        FROM judges j
+        LEFT JOIN users u ON j.user_id = u.id
+        WHERE j.id IN (${placeholders})
+      `, judgeIds);
+    }
 
     res.json({ code: 200, data: { ...committee, judges: judges.rows, judge_ids: judgeIds } });
   } catch (err) {

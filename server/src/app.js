@@ -22,8 +22,8 @@ if (Array.isArray(allowedOrigins) && allowedOrigins.length === 0) {
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (allowedOrigins.includes('*') || !origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins === '*' || (Array.isArray(allowedOrigins) && allowedOrigins.includes('*')) || !origin) return callback(null, true);
+    if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('CORS 不允许的来源'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

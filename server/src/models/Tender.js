@@ -100,9 +100,9 @@ class Tender {
   
   // 获取供应商可见的招标列表
   static async findForSupplier(supplierId, { status, keyword, page = 1, pageSize = 20 } = {}) {
-    let where = 'WHERE t.status IN ($1, $2)';
-    const params = ['published', 'bidding'];
-    let paramIndex = 3;
+    let where = 'WHERE (t.status IN ($1, $2) OR (t.status IN ($3, $4) AND EXISTS (SELECT 1 FROM bids b WHERE b.tender_id = t.id AND b.supplier_id = $5)))';
+    const params = ['published', 'bidding', 'evaluation', 'completed', supplierId];
+    let paramIndex = 6;
     
     if (status) { where += ` AND t.status = $${paramIndex}`; params.push(status); paramIndex++; }
     if (keyword) { where += ` AND (t.title ILIKE $${paramIndex} OR t.project_number ILIKE $${paramIndex})`; params.push(`%${keyword}%`); paramIndex++; }

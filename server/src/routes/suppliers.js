@@ -114,7 +114,7 @@ router.post('/', validate({
 });
 
 // 批量创建供应商（支持 JSON 数组或 CSV 文件上传）
-router.post('/batch', upload.single('file'), async (req, res, next) => {
+router.post('/batch', require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }).single('file'), async (req, res, next) => {
   try {
     let suppliers;
 
@@ -249,7 +249,20 @@ router.delete('/:id', async (req, res, next) => {
     if (!user || user.role !== 'supplier') {
       return res.status(404).json({ code: 404, message: '供应商不存在' });
     }
-    await User.delete(req.params.id);
+
+    const { transaction } = require('../utils/transaction');
+    await transaction(async (client) => {
+      const bidIds = await client.query('SELECT id FROM bids WHERE supplier_id = $1', [req.params.id]);
+      if (bidIds.rows.length > 0) {
+        const ids = bidIds.rows.map(r => r.id);
+        await client.query('DELETE FROM evaluations WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM clarification_responses WHERE request_id IN (SELECT id FROM clarification_requests WHERE bid_id = ANY($1))', [ids]);
+        await client.query('DELETE FROM clarification_requests WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM bids WHERE supplier_id = $1', [req.params.id]);
+      }
+      await client.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    });
+
     res.json({ code: 200, message: '删除成功' });
   } catch (err) {
     next(err);

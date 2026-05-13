@@ -344,7 +344,22 @@ router.delete('/:id', requireRole('admin'), async (req, res, next) => {
     if (tender.status !== 'draft' && tender.status !== 'cancelled') {
       return res.status(400).json({ code: 400, message: '只能删除草稿或已取消的招标项目' });
     }
-    await Tender.delete(req.params.id);
+    const { transaction } = require('../utils/transaction');
+    await transaction(async (client) => {
+      const bidIds = await client.query('SELECT id FROM bids WHERE tender_id = $1', [req.params.id]);
+      if (bidIds.rows.length > 0) {
+        const ids = bidIds.rows.map(r => r.id);
+        await client.query('DELETE FROM evaluations WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM clarification_responses WHERE request_id IN (SELECT id FROM clarification_requests WHERE bid_id = ANY($1))', [ids]);
+        await client.query('DELETE FROM clarification_requests WHERE bid_id = ANY($1)', [ids]);
+        await client.query('DELETE FROM bids WHERE tender_id = $1', [req.params.id]);
+      }
+      await client.query('DELETE FROM evaluation_committees WHERE tender_id = $1', [req.params.id]);
+      await client.query('DELETE FROM evaluation_weights WHERE tender_id = $1', [req.params.id]);
+      await client.query('DELETE FROM clarification_requests WHERE tender_id = $1', [req.params.id]);
+      await client.query('DELETE FROM announcements WHERE tender_id = $1', [req.params.id]);
+      await client.query('DELETE FROM tenders WHERE id = $1', [req.params.id]);
+    });
     res.json({ code: 200, message: '删除成功' });
   } catch (err) {
     next(err);

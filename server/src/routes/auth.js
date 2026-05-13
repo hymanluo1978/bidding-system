@@ -84,7 +84,11 @@ router.put('/change-password', authenticate, validate({
 
 // 获取当前用户信息
 router.get('/me', authenticate, async (req, res) => {
-  res.json({ code: 200, data: req.user });
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ code: 404, message: '用户不存在' });
+  }
+  res.json({ code: 200, data: user });
 });
 
 router.get('/session', authenticate, (req, res) => {
