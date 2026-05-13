@@ -341,9 +341,6 @@ router.delete('/:id', requireRole('admin'), async (req, res, next) => {
     if (!tender) {
       return res.status(404).json({ code: 404, message: '招标项目不存在' });
     }
-    if (tender.status !== 'draft' && tender.status !== 'cancelled') {
-      return res.status(400).json({ code: 400, message: '只能删除草稿或已取消的招标项目' });
-    }
     const { transaction } = require('../utils/transaction');
     await transaction(async (client) => {
       const bidIds = await client.query('SELECT id FROM bids WHERE tender_id = $1', [req.params.id]);
